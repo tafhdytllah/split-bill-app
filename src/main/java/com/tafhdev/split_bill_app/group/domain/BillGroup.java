@@ -5,7 +5,6 @@ import com.tafhdev.split_bill_app.shared.domain.exception.Guard;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class BillGroup {
 
@@ -14,18 +13,16 @@ public class BillGroup {
     private final List<Participant> participants;
     private final Instant createdAt;
 
-    public BillGroup(
+    private BillGroup(
             UUID id,
             String name,
             List<Participant> participants,
             Instant createdAt
     ) {
-        this.id = Guard.requireNotNull(id, "id");
-        this.name = Guard.requireNonBlank(name, "group name");
-        this.participants = new ArrayList<>(
-                Guard.requireNotNull(participants, "participants")
-        );
-        this.createdAt = Guard.requireNotNull(createdAt, "createdAt");
+        this.id = id;
+        this.name = name;
+        this.participants = new ArrayList<>(participants);
+        this.createdAt = createdAt;
     }
 
     public static BillGroup createNew(
@@ -35,22 +32,12 @@ public class BillGroup {
             Instant createdAt
     ) {
 
-        if (participants.size() < 2) {
-            throw new DomainException(
-                    "group must have at least 2 participants"
-            );
-        }
-
-        Set<String> uniqueParticipantNames = participants
-                .stream()
-                .map(Participant::getName)
-                .collect(Collectors.toSet());
-
-        if (uniqueParticipantNames.size() != participants.size()) {
-            throw new DomainException(
-                    "participant names must be unique"
-            );
-        }
+        validateInvariants(
+                id,
+                name,
+                participants,
+                createdAt
+        );
 
         return new BillGroup(
                 id,
@@ -66,12 +53,48 @@ public class BillGroup {
             List<Participant> participants,
             Instant createdAt
     ) {
+        validateInvariants(
+                id,
+                name,
+                participants,
+                createdAt
+        );
+
         return new BillGroup(
                 id,
                 name,
                 participants,
                 createdAt
         );
+    }
+
+    private static void validateInvariants(
+            UUID id,
+            String name,
+            List<Participant> participants,
+            Instant createdAt
+    ) {
+        Guard.requireNotNull(id, "id");
+        Guard.requireNonBlank(name, "group name");
+        Guard.requireNotNull(participants, "participants");
+        Guard.requireNotNull(createdAt, "created at");
+
+        if (participants.size() < 2) {
+            throw new DomainException(
+                    "group must have at least 2 participants"
+            );
+        }
+
+        long uniqueNameCount = participants.stream()
+                .map(Participant::getName)
+                .distinct()
+                .count();
+
+        if (uniqueNameCount != participants.size()) {
+            throw new DomainException(
+                    "participant names must be unique"
+            );
+        }
     }
 
     public UUID getId() {

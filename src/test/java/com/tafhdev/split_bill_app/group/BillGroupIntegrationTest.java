@@ -2,8 +2,8 @@ package com.tafhdev.split_bill_app.group;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-import com.tafhdev.split_bill_app.group.persistance.BillGroupJpaEntity;
-import com.tafhdev.split_bill_app.group.persistance.BillGroupJpaRepository;
+import com.tafhdev.split_bill_app.group.persistence.entity.BillGroupEntity;
+import com.tafhdev.split_bill_app.group.persistence.repository.BillGroupJpaRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -66,7 +66,7 @@ public class BillGroupIntegrationTest {
                         response.get("id").asString()
                 );
 
-        BillGroupJpaEntity group =
+        BillGroupEntity group =
                 billGroupJpaRepository
                         .findByIdWithParticipants(groupId)
                         .orElseThrow();
