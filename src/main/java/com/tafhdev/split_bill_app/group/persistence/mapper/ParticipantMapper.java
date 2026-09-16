@@ -1,16 +1,18 @@
-package com.tafhdev.split_bill_app.group.persistance;
+package com.tafhdev.split_bill_app.group.persistence.mapper;
 
 import com.tafhdev.split_bill_app.group.domain.Participant;
+import com.tafhdev.split_bill_app.group.persistence.entity.BillGroupEntity;
+import com.tafhdev.split_bill_app.group.persistence.entity.ParticipantEntity;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ParticipantMapper {
 
-    public ParticipantJpaEntity toEntity(
+    public ParticipantEntity toEntity(
             Participant domain,
-            BillGroupJpaEntity groupEntity
+            BillGroupEntity groupEntity
     ) {
-        return new ParticipantJpaEntity(
+        return new ParticipantEntity(
                 domain.getId(),
                 groupEntity,
                 domain.getName(),
@@ -18,7 +20,7 @@ public class ParticipantMapper {
         );
     }
 
-    public Participant toDomain(ParticipantJpaEntity entity) {
+    public Participant toDomain(ParticipantEntity entity) {
         return Participant.reconstitute(
                 entity.getId(),
                 entity.getGroup().getId(),

@@ -12,16 +12,16 @@ public class Participant {
     private final String name;
     private final Instant createdAt;
 
-    public Participant(
+    private Participant(
             UUID id,
             UUID groupId,
             String name,
             Instant createdAt
     ) {
-        this.id = Guard.requireNotNull(id, "id");
-        this.groupId = Guard.requireNotNull(groupId, "groupId");
-        this.name = Guard.requireNonBlank(name, "name");
-        this.createdAt = Guard.requireNotNull(createdAt, "createdAt");
+        this.id = id;
+        this.groupId = groupId;
+        this.name = name;
+        this.createdAt = createdAt;
     }
 
     public static Participant createNew(
@@ -30,6 +30,13 @@ public class Participant {
         String name,
         Instant createdAt
     ) {
+        validateInvariants(
+                id,
+                groupId,
+                name,
+                createdAt
+        );
+
         return new Participant(
                 id,
                 groupId,
@@ -44,12 +51,31 @@ public class Participant {
             String name,
             Instant createdAt
     ) {
+        validateInvariants(
+                id,
+                groupId,
+                name,
+                createdAt
+        );
+
         return new Participant(
                 id,
                 groupId,
                 name,
                 createdAt
         );
+    }
+
+    private static void validateInvariants(
+            UUID id,
+            UUID groupId,
+            String name,
+            Instant createdAt
+    ) {
+        Guard.requireNotNull(id, "id");
+        Guard.requireNotNull(groupId, "group id");
+        Guard.requireNonBlank(name, "name");
+        Guard.requireNotNull(createdAt, "created at");
     }
 
     public UUID getId() {
