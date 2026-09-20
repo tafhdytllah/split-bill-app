@@ -106,6 +106,20 @@ CREATE TABLE audit_logs
             REFERENCES groups (id)
 );
 
+CREATE TABLE idempotencies
+(
+    id  UUID PRIMARY KEY,
+    scope VARCHAR(100) NOT NULL,
+    idempotency_key VARCHAR(255) NOT NULL,
+    request_hash VARCHAR(64) NOT NULL,
+    response_code INTEGER,
+    response_body TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+
+    CONSTRAINT uk_idempotency_scope_key
+        UNIQUE (scope, idempotency_key)
+);
+
 -- Indexes based on query patterns
 
 CREATE INDEX idx_expenses_group_id
