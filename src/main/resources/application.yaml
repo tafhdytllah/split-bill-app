@@ -35,7 +35,6 @@ spring:
   jackson:
     deserialization:
       fail-on-unknown-properties: true
-    property-naming-strategy: SNAKE_CASE
 
 server:
   port: ${PORT:4110}

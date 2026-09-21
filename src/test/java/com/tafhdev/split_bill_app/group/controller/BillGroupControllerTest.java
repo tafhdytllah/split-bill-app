@@ -88,7 +88,7 @@ class BillGroupControllerTest {
                         .value(participantId2.toString()))
                 .andExpect(jsonPath("$.participants[1].name")
                         .value("Andi"))
-                .andExpect(jsonPath("$.created_at")
+                .andExpect(jsonPath("$.createdAt")
                         .value("2026-01-01T00:00:00Z"));
     }
 }

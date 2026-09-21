@@ -5,6 +5,7 @@ import com.tafhdev.split_bill_app.group.controller.dto.CreateBillGroupRequest;
 import com.tafhdev.split_bill_app.group.controller.dto.ParticipantResponse;
 import com.tafhdev.split_bill_app.group.domain.BillGroup;
 import com.tafhdev.split_bill_app.group.service.BillGroupService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +24,7 @@ public class BillGroupController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public BillGroupResponse createGroup(
-            @RequestBody CreateBillGroupRequest request
+            @Valid @RequestBody CreateBillGroupRequest request
     ) {
 
         BillGroup billGroup = billGroupService.createGroup(
