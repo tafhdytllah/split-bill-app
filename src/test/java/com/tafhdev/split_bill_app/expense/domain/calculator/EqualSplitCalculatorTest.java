@@ -1,6 +1,7 @@
-package com.tafhdev.split_bill_app.expense.domain.split;
+package com.tafhdev.split_bill_app.expense.domain.calculator;
 
 import com.tafhdev.split_bill_app.expense.domain.ExpenseSplit;
+import com.tafhdev.split_bill_app.expense.domain.SplitParticipant;
 import com.tafhdev.split_bill_app.shared.domain.Money;
 import com.tafhdev.split_bill_app.shared.domain.exception.DomainException;
 import com.tafhdev.split_bill_app.shared.infrastructure.generator.IdGenerator;
@@ -39,9 +40,9 @@ class EqualSplitCalculatorTest {
         List<ExpenseSplit> splits = calculator.calculate(
                 Money.of(new BigDecimal("300.00")),
                 List.of(
-                        participant1,
-                        participant2,
-                        participant3
+                        new SplitParticipant(participant1, null, null),
+                        new SplitParticipant(participant2, null, null),
+                        new SplitParticipant(participant3, null, null)
                 )
         );
 
@@ -77,9 +78,9 @@ class EqualSplitCalculatorTest {
         List<ExpenseSplit> splits = calculator.calculate(
                 Money.of(new BigDecimal("100.00")),
                 List.of(
-                        participant1,
-                        participant2,
-                        participant3
+                        new SplitParticipant(participant1, null, null),
+                        new SplitParticipant(participant2, null, null),
+                        new SplitParticipant(participant3, null, null)
                 )
         );
 
@@ -105,9 +106,21 @@ class EqualSplitCalculatorTest {
         List<ExpenseSplit> splits = calculator.calculate(
                 Money.of(new BigDecimal("100.00")),
                 List.of(
-                        UUID.randomUUID(),
-                        UUID.randomUUID(),
-                        UUID.randomUUID()
+                        new SplitParticipant(
+                                UUID.randomUUID(),
+                                null,
+                                null
+                        ),
+                        new SplitParticipant(
+                                UUID.randomUUID(),
+                                null,
+                                null
+                        ),
+                        new SplitParticipant(
+                                UUID.randomUUID(),
+                                null,
+                                null
+                        )
                 )
         );
 
@@ -128,8 +141,16 @@ class EqualSplitCalculatorTest {
                 calculator.calculate(
                         null,
                         List.of(
-                                UUID.randomUUID(),
-                                UUID.randomUUID()
+                                new SplitParticipant(
+                                        UUID.randomUUID(),
+                                        null,
+                                        null
+                                ),
+                                new SplitParticipant(
+                                        UUID.randomUUID(),
+                                        null,
+                                        null
+                                )
                         )
                 )
         )
@@ -154,7 +175,13 @@ class EqualSplitCalculatorTest {
         assertThatThrownBy(() ->
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
-                        List.of(UUID.randomUUID())
+                        List.of(
+                                new SplitParticipant(
+                                        UUID.randomUUID(),
+                                        null,
+                                        null
+                                )
+                        )
                 )
         )
                 .isInstanceOf(DomainException.class)
@@ -169,8 +196,16 @@ class EqualSplitCalculatorTest {
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
                         List.of(
-                                participantId,
-                                participantId
+                                new SplitParticipant(
+                                        participantId,
+                                        null,
+                                        null
+                                ),
+                                new SplitParticipant(
+                                        participantId,
+                                        null,
+                                        null
+                                )
                         )
                 )
         )
@@ -184,12 +219,70 @@ class EqualSplitCalculatorTest {
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
                         Arrays.asList(
-                                UUID.randomUUID(),
-                                null
+                                new SplitParticipant(
+                                        UUID.randomUUID(),
+                                        null,
+                                        null
+                                ),
+                                new SplitParticipant(
+                                        null,
+                                        null,
+                                        null
+                                )
                         )
                 )
         )
                 .isInstanceOf(DomainException.class)
                 .hasMessage("participant id must not be null");
+    }
+
+    @Test
+    void shouldRejectAmountInEqualSplit() {
+        assertThatThrownBy(() ->
+                calculator.calculate(
+                        Money.of(new BigDecimal("100.00")),
+                        List.of(
+                                new SplitParticipant(
+                                        UUID.randomUUID(),
+                                        Money.of(new BigDecimal("50.00")),
+                                        null
+                                ),
+                                new SplitParticipant(
+                                        UUID.randomUUID(),
+                                        null,
+                                        null
+                                )
+                        )
+                )
+        )
+                .isInstanceOf(DomainException.class)
+                .hasMessage(
+                        "equal split must not have amount or percentage"
+                );
+    }
+
+    @Test
+    void shouldRejectPercentageInEqualSplit() {
+        assertThatThrownBy(() ->
+                calculator.calculate(
+                        Money.of(new BigDecimal("100.00")),
+                        List.of(
+                                new SplitParticipant(
+                                        UUID.randomUUID(),
+                                        null,
+                                        new BigDecimal("50")
+                                ),
+                                new SplitParticipant(
+                                        UUID.randomUUID(),
+                                        null,
+                                        null
+                                )
+                        )
+                )
+        )
+                .isInstanceOf(DomainException.class)
+                .hasMessage(
+                        "equal split must not have amount or percentage"
+                );
     }
 }

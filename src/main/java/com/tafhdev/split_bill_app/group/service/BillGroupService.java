@@ -3,6 +3,7 @@ package com.tafhdev.split_bill_app.group.service;
 import com.tafhdev.split_bill_app.group.domain.BillGroup;
 import com.tafhdev.split_bill_app.group.domain.Participant;
 import com.tafhdev.split_bill_app.group.repository.BillGroupRepository;
+import com.tafhdev.split_bill_app.group.service.dto.CreateBillGroupResult;
 import com.tafhdev.split_bill_app.shared.infrastructure.generator.IdGenerator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +31,7 @@ public class BillGroupService {
     }
 
     @Transactional
-    public BillGroup createGroup(
+    public CreateBillGroupResult createGroup(
             String name,
             List<String> participantNames
     ) {
@@ -56,6 +57,10 @@ public class BillGroupService {
                 now
         );
 
-        return billGroupRepository.save(group);
+        BillGroup savedBillGroup = billGroupRepository.save(group);
+
+        return new CreateBillGroupResult(
+                savedBillGroup
+        );
     }
 }

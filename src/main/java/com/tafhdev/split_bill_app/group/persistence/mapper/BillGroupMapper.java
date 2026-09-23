@@ -13,7 +13,9 @@ public class BillGroupMapper {
 
     private final ParticipantMapper participantMapper;
 
-    public BillGroupMapper(ParticipantMapper participantMapper) {
+    public BillGroupMapper(
+            ParticipantMapper participantMapper
+    ) {
         this.participantMapper = participantMapper;
     }
 

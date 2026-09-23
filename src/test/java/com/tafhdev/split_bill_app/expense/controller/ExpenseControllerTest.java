@@ -1,9 +1,11 @@
 package com.tafhdev.split_bill_app.expense.controller;
 
 import com.tafhdev.split_bill_app.expense.controller.dto.request.CreateExpenseRequest;
-import com.tafhdev.split_bill_app.expense.controller.dto.request.ExactSplitRequest;
-import com.tafhdev.split_bill_app.expense.controller.dto.request.PercentageSplitRequest;
+import com.tafhdev.split_bill_app.expense.controller.dto.request.SplitParticipantRequest;
 import com.tafhdev.split_bill_app.expense.controller.dto.request.SplitRequest;
+import com.tafhdev.split_bill_app.expense.controller.dto.response.ExpenseResponse;
+import com.tafhdev.split_bill_app.expense.controller.dto.response.ExpenseSplitResponse;
+import com.tafhdev.split_bill_app.expense.controller.mapper.ExpenseResponseMapper;
 import com.tafhdev.split_bill_app.expense.domain.Expense;
 import com.tafhdev.split_bill_app.expense.domain.ExpenseCategory;
 import com.tafhdev.split_bill_app.expense.domain.ExpenseSplit;
@@ -43,6 +45,9 @@ class ExpenseControllerTest {
 
     @MockitoBean
     private ExpenseService expenseService;
+
+    @MockitoBean
+    private ExpenseResponseMapper expenseResponseMapper;
 
     @Test
     void shouldCreateExpense() throws Exception {
@@ -105,23 +110,70 @@ class ExpenseControllerTest {
                         )
                 );
 
+        SplitParticipantRequest participantRequest1 = new SplitParticipantRequest(
+                participant1,
+                null, null
+        );
+
+        SplitParticipantRequest participantRequest2 = new SplitParticipantRequest(
+                participant1,
+                null, null
+        );
+
         CreateExpenseRequest request =
                 new CreateExpenseRequest(
                         paidBy,
                         new BigDecimal("300000.00"),
                         ExpenseCategory.FOOD,
-                        SplitType.EQUAL,
                         new SplitRequest(
-                                List.of(participant1, participant2),
-                                null,
-                                null
+                                SplitType.EQUAL,
+                                List.of(
+                                        new SplitParticipantRequest(
+                                                participant1,
+                                                null, null
+                                        ),
+                                        new SplitParticipantRequest(
+                                                participant2,
+                                                null, null
+                                        )
+                                )
                         )
+                );
+
+        ExpenseResponse response =
+                new ExpenseResponse(
+                        expenseId,
+                        groupId,
+                        paidBy,
+                        new BigDecimal("300000.00"),
+                        ExpenseCategory.FOOD,
+                        SplitType.EQUAL,
+                        List.of(
+                                new ExpenseSplitResponse(
+                                        split1.getId(),
+                                        participant1,
+                                        "Taufik",
+                                        new BigDecimal("150000.00")
+                                ),
+                                new ExpenseSplitResponse(
+                                        split2.getId(),
+                                        participant2,
+                                        "Budi",
+                                        new BigDecimal("150000.00")
+                                )
+                        ),
+                        createdAt
                 );
 
         when(expenseService.createExpense(
                 eq(groupId),
                 eq(request)
         )).thenReturn(result);
+
+        when(expenseResponseMapper.toResponse(
+                eq(result.expense()),
+                eq(result.participants())
+        )).thenReturn(response);
 
         mockMvc.perform(
                         post("/api/groups/{groupId}/expenses", groupId)
@@ -167,6 +219,12 @@ class ExpenseControllerTest {
                         eq(groupId),
                         eq(request)
                 );
+
+        verify(expenseResponseMapper)
+                .toResponse(
+                        eq(result.expense()),
+                        eq(result.participants())
+                );
     }
 
     @Test
@@ -177,9 +235,6 @@ class ExpenseControllerTest {
         UUID paidBy = UUID.randomUUID();
         UUID participant1 = UUID.randomUUID();
         UUID participant2 = UUID.randomUUID();
-
-        Money expenseAmount =
-                Money.of(new BigDecimal("300000.00"));
 
         Instant createdAt =
                 Instant.parse("2026-09-16T10:00:00Z");
@@ -198,16 +253,29 @@ class ExpenseControllerTest {
                 createdAt
         );
 
-        List<ExactSplitRequest> exactSplitRequests = List.of(
-                new ExactSplitRequest(
-                        participant1,
-                        new BigDecimal("200000.00")
-                ),
-                new ExactSplitRequest(
-                        participant2,
-                        new BigDecimal("100000.00")
+        SplitRequest splitRequest = new SplitRequest(
+                SplitType.EXACT,
+                List.of(
+                        new SplitParticipantRequest(
+                                participant1,
+                                new BigDecimal("200000.00"),
+                                null
+                        ),
+                        new SplitParticipantRequest(
+                                participant2,
+                                new BigDecimal("100000.00"),
+                                null
+                        )
                 )
         );
+
+        CreateExpenseRequest request =
+                new CreateExpenseRequest(
+                        paidBy,
+                        new BigDecimal("300000.00"),
+                        ExpenseCategory.FOOD,
+                        splitRequest
+                );
 
         ExpenseSplit split1 = ExpenseSplit.createNew(
                 UUID.randomUUID(),
@@ -225,7 +293,7 @@ class ExpenseControllerTest {
                 expenseId,
                 groupId,
                 paidBy,
-                expenseAmount,
+                Money.of(new BigDecimal("300000.00")),
                 ExpenseCategory.FOOD,
                 SplitType.EXACT,
                 List.of(split1, split2),
@@ -241,23 +309,40 @@ class ExpenseControllerTest {
                         )
                 );
 
-        CreateExpenseRequest request =
-                new CreateExpenseRequest(
+        ExpenseResponse response =
+                new ExpenseResponse(
+                        expenseId,
+                        groupId,
                         paidBy,
                         new BigDecimal("300000.00"),
                         ExpenseCategory.FOOD,
                         SplitType.EXACT,
-                        new SplitRequest(
-                                null,
-                                exactSplitRequests,
-                                null
-                        )
+                        List.of(
+                                new ExpenseSplitResponse(
+                                        split1.getId(),
+                                        participant1,
+                                        "Taufik",
+                                        new BigDecimal("200000.00")
+                                ),
+                                new ExpenseSplitResponse(
+                                        split2.getId(),
+                                        participant2,
+                                        "Budi",
+                                        new BigDecimal("100000.00")
+                                )
+                        ),
+                        createdAt
                 );
 
         when(expenseService.createExpense(
                 eq(groupId),
                 eq(request)
         )).thenReturn(result);
+
+        when(expenseResponseMapper.toResponse(
+                eq(result.expense()),
+                eq(result.participants())
+        )).thenReturn(response);
 
         mockMvc.perform(
                         post("/api/groups/{groupId}/expenses", groupId)
@@ -279,6 +364,8 @@ class ExpenseControllerTest {
                         .value("FOOD"))
                 .andExpect(jsonPath("$.splitType")
                         .value("EXACT"))
+                .andExpect(jsonPath("$.splits")
+                        .isArray())
                 .andExpect(jsonPath("$.splits.length()")
                         .value(2))
                 .andExpect(jsonPath("$.splits[0].participantId")
@@ -301,6 +388,12 @@ class ExpenseControllerTest {
                         eq(groupId),
                         eq(request)
                 );
+
+        verify(expenseResponseMapper)
+                .toResponse(
+                        eq(result.expense()),
+                        eq(result.participants())
+                );
     }
 
     @Test
@@ -311,9 +404,6 @@ class ExpenseControllerTest {
         UUID paidBy = UUID.randomUUID();
         UUID participant1 = UUID.randomUUID();
         UUID participant2 = UUID.randomUUID();
-
-        Money expenseAmount =
-                Money.of(new BigDecimal("300000.00"));
 
         Instant createdAt =
                 Instant.parse("2026-09-16T10:00:00Z");
@@ -332,16 +422,29 @@ class ExpenseControllerTest {
                 createdAt
         );
 
-        List<PercentageSplitRequest> percentageSplitRequests = List.of(
-                new PercentageSplitRequest(
-                        participant1,
-                        new BigDecimal("60")
-                ),
-                new PercentageSplitRequest(
-                        participant2,
-                        new BigDecimal("40")
+        SplitRequest splitRequest = new SplitRequest(
+                SplitType.PERCENTAGE,
+                List.of(
+                        new SplitParticipantRequest(
+                                participant1,
+                                null,
+                                new BigDecimal("60")
+                        ),
+                        new SplitParticipantRequest(
+                                participant2,
+                                null,
+                                new BigDecimal("40")
+                        )
                 )
         );
+
+        CreateExpenseRequest request =
+                new CreateExpenseRequest(
+                        paidBy,
+                        new BigDecimal("300000.00"),
+                        ExpenseCategory.FOOD,
+                        splitRequest
+                );
 
         ExpenseSplit split1 = ExpenseSplit.createNew(
                 UUID.randomUUID(),
@@ -359,7 +462,7 @@ class ExpenseControllerTest {
                 expenseId,
                 groupId,
                 paidBy,
-                expenseAmount,
+                Money.of(new BigDecimal("300000.00")),
                 ExpenseCategory.FOOD,
                 SplitType.PERCENTAGE,
                 List.of(split1, split2),
@@ -375,23 +478,40 @@ class ExpenseControllerTest {
                         )
                 );
 
-        CreateExpenseRequest request =
-                new CreateExpenseRequest(
+        ExpenseResponse response =
+                new ExpenseResponse(
+                        expenseId,
+                        groupId,
                         paidBy,
                         new BigDecimal("300000.00"),
                         ExpenseCategory.FOOD,
                         SplitType.PERCENTAGE,
-                        new SplitRequest(
-                                null,
-                                null,
-                                percentageSplitRequests
-                        )
+                        List.of(
+                                new ExpenseSplitResponse(
+                                        split1.getId(),
+                                        participant1,
+                                        "Taufik",
+                                        new BigDecimal("180000.00")
+                                ),
+                                new ExpenseSplitResponse(
+                                        split2.getId(),
+                                        participant2,
+                                        "Budi",
+                                        new BigDecimal("120000.00")
+                                )
+                        ),
+                        createdAt
                 );
 
         when(expenseService.createExpense(
                 eq(groupId),
                 eq(request)
         )).thenReturn(result);
+
+        when(expenseResponseMapper.toResponse(
+                eq(result.expense()),
+                eq(result.participants())
+        )).thenReturn(response);
 
         mockMvc.perform(
                         post("/api/groups/{groupId}/expenses", groupId)
@@ -413,6 +533,8 @@ class ExpenseControllerTest {
                         .value("FOOD"))
                 .andExpect(jsonPath("$.splitType")
                         .value("PERCENTAGE"))
+                .andExpect(jsonPath("$.splits")
+                        .isArray())
                 .andExpect(jsonPath("$.splits.length()")
                         .value(2))
                 .andExpect(jsonPath("$.splits[0].participantId")
@@ -435,6 +557,12 @@ class ExpenseControllerTest {
                         eq(groupId),
                         eq(request)
                 );
+
+        verify(expenseResponseMapper)
+                .toResponse(
+                        eq(result.expense()),
+                        eq(result.participants())
+                );
     }
 
     @Test
@@ -447,14 +575,20 @@ class ExpenseControllerTest {
                         null,
                         new BigDecimal("300000.00"),
                         ExpenseCategory.FOOD,
-                        SplitType.EQUAL,
                         new SplitRequest(
+                                SplitType.EQUAL,
                                 List.of(
-                                        UUID.randomUUID(),
-                                        UUID.randomUUID()
-                                ),
-                                null,
-                                null
+                                        new SplitParticipantRequest(
+                                                UUID.randomUUID(),
+                                                null,
+                                                null
+                                        ),
+                                        new SplitParticipantRequest(
+                                                UUID.randomUUID(),
+                                                null,
+                                                null
+                                        )
+                                )
                         )
                 );
 
@@ -480,14 +614,20 @@ class ExpenseControllerTest {
                         UUID.randomUUID(),
                         null,
                         ExpenseCategory.FOOD,
-                        SplitType.EQUAL,
                         new SplitRequest(
+                                SplitType.EQUAL,
                                 List.of(
-                                        UUID.randomUUID(),
-                                        UUID.randomUUID()
-                                ),
-                                null,
-                                null
+                                        new SplitParticipantRequest(
+                                                UUID.randomUUID(),
+                                                null,
+                                                null
+                                        ),
+                                        new SplitParticipantRequest(
+                                                UUID.randomUUID(),
+                                                null,
+                                                null
+                                        )
+                                )
                         )
                 );
 
@@ -513,14 +653,20 @@ class ExpenseControllerTest {
                         UUID.randomUUID(),
                         BigDecimal.ZERO,
                         ExpenseCategory.FOOD,
-                        SplitType.EQUAL,
                         new SplitRequest(
+                                SplitType.EQUAL,
                                 List.of(
-                                        UUID.randomUUID(),
-                                        UUID.randomUUID()
-                                ),
-                                null,
-                                null
+                                        new SplitParticipantRequest(
+                                                UUID.randomUUID(),
+                                                null,
+                                                null
+                                        ),
+                                        new SplitParticipantRequest(
+                                                UUID.randomUUID(),
+                                                null,
+                                                null
+                                        )
+                                )
                         )
                 );
 
@@ -546,14 +692,20 @@ class ExpenseControllerTest {
                         UUID.randomUUID(),
                         new BigDecimal("300000.00"),
                         null,
-                        SplitType.EQUAL,
                         new SplitRequest(
+                                SplitType.EQUAL,
                                 List.of(
-                                        UUID.randomUUID(),
-                                        UUID.randomUUID()
-                                ),
-                                null,
-                                null
+                                        new SplitParticipantRequest(
+                                                UUID.randomUUID(),
+                                                null,
+                                                null
+                                        ),
+                                        new SplitParticipantRequest(
+                                                UUID.randomUUID(),
+                                                null,
+                                                null
+                                        )
+                                )
                         )
                 );
 
@@ -579,14 +731,20 @@ class ExpenseControllerTest {
                         UUID.randomUUID(),
                         new BigDecimal("300000.00"),
                         ExpenseCategory.FOOD,
-                        null,
                         new SplitRequest(
-                                List.of(
-                                        UUID.randomUUID(),
-                                        UUID.randomUUID()
-                                ),
                                 null,
-                                null
+                                List.of(
+                                        new SplitParticipantRequest(
+                                                UUID.randomUUID(),
+                                                null,
+                                                null
+                                        ),
+                                        new SplitParticipantRequest(
+                                                UUID.randomUUID(),
+                                                null,
+                                                null
+                                        )
+                                )
                         )
                 );
 

@@ -18,7 +18,9 @@ public class ExpenseMapper {
 
     private final ExpenseSplitMapper expenseSplitMapper;
 
-    public ExpenseMapper(ExpenseSplitMapper expenseSplitMapper) {
+    public ExpenseMapper(
+            ExpenseSplitMapper expenseSplitMapper
+    ) {
         this.expenseSplitMapper = expenseSplitMapper;
     }
 

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import com.tafhdev.split_bill_app.group.domain.BillGroup;
 import com.tafhdev.split_bill_app.group.repository.BillGroupRepository;
+import com.tafhdev.split_bill_app.group.service.dto.CreateBillGroupResult;
 import com.tafhdev.split_bill_app.shared.infrastructure.generator.IdGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,35 +60,35 @@ class BillGroupServiceTest {
         when(billGroupRepository.save(any(BillGroup.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        BillGroup result = billGroupService.createGroup(
+        CreateBillGroupResult result = billGroupService.createGroup(
                 "Trip Bandung",
                 List.of("Taufik", "Andi")
         );
 
-        assertThat(result.getId())
+        assertThat(result.billGroup().getId())
                 .isEqualTo(groupId);
 
-        assertThat(result.getName())
+        assertThat(result.billGroup().getName())
                 .isEqualTo("Trip Bandung");
 
-        assertThat(result.getParticipants())
+        assertThat(result.billGroup().getParticipants())
                 .hasSize(2);
 
-        assertThat(result.getParticipants())
+        assertThat(result.billGroup().getParticipants())
                 .extracting("id")
                 .containsExactly(
                         participantId1,
                         participantId2
                 );
 
-        assertThat(result.getParticipants())
+        assertThat(result.billGroup().getParticipants())
                 .extracting("name")
                 .containsExactly(
                         "Taufik",
                         "Andi"
                 );
 
-        assertThat(result.getCreatedAt())
+        assertThat(result.billGroup().getCreatedAt())
                 .isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
 
         verify(idGenerator, times(3))

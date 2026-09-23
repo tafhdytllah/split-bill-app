@@ -1,6 +1,7 @@
-package com.tafhdev.split_bill_app.expense.domain.split;
+package com.tafhdev.split_bill_app.expense.domain.calculator;
 
 import com.tafhdev.split_bill_app.expense.domain.ExpenseSplit;
+import com.tafhdev.split_bill_app.expense.domain.SplitParticipant;
 import com.tafhdev.split_bill_app.shared.domain.Money;
 import com.tafhdev.split_bill_app.shared.domain.exception.DomainException;
 import com.tafhdev.split_bill_app.shared.infrastructure.generator.IdGenerator;
@@ -36,24 +37,27 @@ class PercentageSplitCalculatorTest {
         UUID participant2 = UUID.randomUUID();
         UUID participant3 = UUID.randomUUID();
 
-        List<PercentageSplit> percentageSplits = List.of(
-                new PercentageSplit(
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
                         participant1,
+                        null,
                         new BigDecimal("50")
                 ),
-                new PercentageSplit(
+                new SplitParticipant(
                         participant2,
+                        null,
                         new BigDecimal("30")
                 ),
-                new PercentageSplit(
+                new SplitParticipant(
                         participant3,
+                        null,
                         new BigDecimal("20")
                 )
         );
 
         List<ExpenseSplit> result = calculator.calculate(
                 Money.of(new BigDecimal("300.00")),
-                percentageSplits
+                participants
         );
 
         assertThat(result)
@@ -74,28 +78,27 @@ class PercentageSplitCalculatorTest {
                         UUID.randomUUID()
                 );
 
-        UUID participant1 = UUID.randomUUID();
-        UUID participant2 = UUID.randomUUID();
-        UUID participant3 = UUID.randomUUID();
-
-        List<PercentageSplit> percentageSplits = List.of(
-                new PercentageSplit(
-                        participant1,
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        null,
                         new BigDecimal("33.33")
                 ),
-                new PercentageSplit(
-                        participant2,
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        null,
                         new BigDecimal("33.33")
                 ),
-                new PercentageSplit(
-                        participant3,
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        null,
                         new BigDecimal("33.34")
                 )
         );
 
         List<ExpenseSplit> result = calculator.calculate(
                 Money.of(new BigDecimal("100.00")),
-                percentageSplits
+                participants
         );
 
         Money total = result.stream()
@@ -118,28 +121,27 @@ class PercentageSplitCalculatorTest {
                         UUID.randomUUID()
                 );
 
-        UUID participant1 = UUID.randomUUID();
-        UUID participant2 = UUID.randomUUID();
-        UUID participant3 = UUID.randomUUID();
-
-        List<PercentageSplit> percentageSplits = List.of(
-                new PercentageSplit(
-                        participant1,
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        null,
                         new BigDecimal("33.33")
                 ),
-                new PercentageSplit(
-                        participant2,
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        null,
                         new BigDecimal("33.33")
                 ),
-                new PercentageSplit(
-                        participant3,
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        null,
                         new BigDecimal("33.34")
                 )
         );
 
         List<ExpenseSplit> result = calculator.calculate(
                 Money.of(new BigDecimal("0.05")),
-                percentageSplits
+                participants
         );
 
         assertThat(result)
@@ -159,23 +161,22 @@ class PercentageSplitCalculatorTest {
                         UUID.randomUUID()
                 );
 
-        UUID participant1 = UUID.randomUUID();
-        UUID participant2 = UUID.randomUUID();
-
-        List<PercentageSplit> percentageSplits = List.of(
-                new PercentageSplit(
-                        participant1,
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        null,
                         new BigDecimal("100")
                 ),
-                new PercentageSplit(
-                        participant2,
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        null,
                         new BigDecimal("0")
                 )
         );
 
         List<ExpenseSplit> result = calculator.calculate(
                 Money.of(new BigDecimal("100.00")),
-                percentageSplits
+                participants
         );
 
         assertThat(result)
@@ -188,16 +189,15 @@ class PercentageSplitCalculatorTest {
 
     @Test
     void shouldRejectNullExpenseAmount() {
-        UUID participant1 = UUID.randomUUID();
-        UUID participant2 = UUID.randomUUID();
-
-        List<PercentageSplit> percentageSplits = List.of(
-                new PercentageSplit(
-                        participant1,
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        null,
                         new BigDecimal("50")
                 ),
-                new PercentageSplit(
-                        participant2,
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        null,
                         new BigDecimal("50")
                 )
         );
@@ -205,7 +205,7 @@ class PercentageSplitCalculatorTest {
         assertThatThrownBy(() ->
                 calculator.calculate(
                         null,
-                        percentageSplits
+                        participants
                 )
         )
                 .isInstanceOf(DomainException.class)
@@ -213,7 +213,7 @@ class PercentageSplitCalculatorTest {
     }
 
     @Test
-    void shouldRejectNullPercentageSplits() {
+    void shouldRejectNullParticipants() {
         assertThatThrownBy(() ->
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
@@ -221,16 +221,15 @@ class PercentageSplitCalculatorTest {
                 )
         )
                 .isInstanceOf(DomainException.class)
-                .hasMessage("percentage splits must not be null");
+                .hasMessage("participants must not be null");
     }
 
     @Test
     void shouldRejectLessThanTwoParticipants() {
-        UUID participantId = UUID.randomUUID();
-
-        List<PercentageSplit> percentageSplits = List.of(
-                new PercentageSplit(
-                        participantId,
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        null,
                         new BigDecimal("100")
                 )
         );
@@ -238,7 +237,7 @@ class PercentageSplitCalculatorTest {
         assertThatThrownBy(() ->
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
-                        percentageSplits
+                        participants
                 )
         )
                 .isInstanceOf(DomainException.class)
@@ -248,12 +247,11 @@ class PercentageSplitCalculatorTest {
     }
 
     @Test
-    void shouldRejectNullPercentageSplit() {
-        UUID participantId = UUID.randomUUID();
-
-        List<PercentageSplit> percentageSplits = Arrays.asList(
-                new PercentageSplit(
-                        participantId,
+    void shouldRejectNullParticipant() {
+        List<SplitParticipant> participants = Arrays.asList(
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        null,
                         new BigDecimal("50")
                 ),
                 null
@@ -262,22 +260,24 @@ class PercentageSplitCalculatorTest {
         assertThatThrownBy(() ->
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
-                        percentageSplits
+                        participants
                 )
         )
                 .isInstanceOf(DomainException.class)
-                .hasMessage("percentage split must not be null");
+                .hasMessage("split participant must not be null");
     }
 
     @Test
     void shouldRejectNullParticipantId() {
-        List<PercentageSplit> percentageSplits = Arrays.asList(
-                new PercentageSplit(
+        List<SplitParticipant> participants = Arrays.asList(
+                new SplitParticipant(
+                        null,
                         null,
                         new BigDecimal("50")
                 ),
-                new PercentageSplit(
+                new SplitParticipant(
                         UUID.randomUUID(),
+                        null,
                         new BigDecimal("50")
                 )
         );
@@ -285,7 +285,7 @@ class PercentageSplitCalculatorTest {
         assertThatThrownBy(() ->
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
-                        percentageSplits
+                        participants
                 )
         )
                 .isInstanceOf(DomainException.class)
@@ -294,13 +294,15 @@ class PercentageSplitCalculatorTest {
 
     @Test
     void shouldRejectNullPercentage() {
-        List<PercentageSplit> percentageSplits = Arrays.asList(
-                new PercentageSplit(
+        List<SplitParticipant> participants = Arrays.asList(
+                new SplitParticipant(
                         UUID.randomUUID(),
+                        null,
                         null
                 ),
-                new PercentageSplit(
+                new SplitParticipant(
                         UUID.randomUUID(),
+                        null,
                         new BigDecimal("50")
                 )
         );
@@ -308,22 +310,55 @@ class PercentageSplitCalculatorTest {
         assertThatThrownBy(() ->
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
-                        percentageSplits
+                        participants
                 )
         )
                 .isInstanceOf(DomainException.class)
-                .hasMessage("percentage must not be null");
+                .hasMessage("split percentage must not be null");
+    }
+
+    @Test
+    void shouldRejectAmountInPercentageSplit() {
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        Money.of(new BigDecimal("50.00")),
+                        new BigDecimal("50")
+                ),
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        null,
+                        new BigDecimal("50")
+                )
+        );
+
+        assertThatThrownBy(() ->
+                calculator.calculate(
+                        Money.of(new BigDecimal("100.00")),
+                        participants
+                )
+        )
+                .isInstanceOf(DomainException.class)
+                .hasMessage("percentage split must not have amount");
     }
 
     @Test
     void shouldRejectNegativePercentage() {
-        List<PercentageSplit> percentageSplits = List.of(
-                new PercentageSplit(
+        when(idGenerator.generate())
+                .thenReturn(
                         UUID.randomUUID(),
+                        UUID.randomUUID()
+                );
+
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        null,
                         new BigDecimal("-10")
                 ),
-                new PercentageSplit(
+                new SplitParticipant(
                         UUID.randomUUID(),
+                        null,
                         new BigDecimal("110")
                 )
         );
@@ -331,7 +366,7 @@ class PercentageSplitCalculatorTest {
         assertThatThrownBy(() ->
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
-                        percentageSplits
+                        participants
                 )
         )
                 .isInstanceOf(DomainException.class)
@@ -340,13 +375,15 @@ class PercentageSplitCalculatorTest {
 
     @Test
     void shouldRejectPercentageGreaterThan100() {
-        List<PercentageSplit> percentageSplits = List.of(
-                new PercentageSplit(
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
                         UUID.randomUUID(),
+                        null,
                         new BigDecimal("101")
                 ),
-                new PercentageSplit(
+                new SplitParticipant(
                         UUID.randomUUID(),
+                        null,
                         new BigDecimal("-1")
                 )
         );
@@ -354,7 +391,7 @@ class PercentageSplitCalculatorTest {
         assertThatThrownBy(() ->
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
-                        percentageSplits
+                        participants
                 )
         )
                 .isInstanceOf(DomainException.class)
@@ -363,13 +400,21 @@ class PercentageSplitCalculatorTest {
 
     @Test
     void shouldRejectPercentageWithMoreThanTwoDecimalPlaces() {
-        List<PercentageSplit> percentageSplits = List.of(
-                new PercentageSplit(
+        when(idGenerator.generate())
+                .thenReturn(
                         UUID.randomUUID(),
+                        UUID.randomUUID()
+                );
+
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        null,
                         new BigDecimal("50.001")
                 ),
-                new PercentageSplit(
+                new SplitParticipant(
                         UUID.randomUUID(),
+                        null,
                         new BigDecimal("49.999")
                 )
         );
@@ -377,7 +422,7 @@ class PercentageSplitCalculatorTest {
         assertThatThrownBy(() ->
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
-                        percentageSplits
+                        participants
                 )
         )
                 .isInstanceOf(DomainException.class)
@@ -388,13 +433,15 @@ class PercentageSplitCalculatorTest {
 
     @Test
     void shouldRejectTotalPercentageLessThan100() {
-        List<PercentageSplit> percentageSplits = List.of(
-                new PercentageSplit(
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
                         UUID.randomUUID(),
+                        null,
                         new BigDecimal("40")
                 ),
-                new PercentageSplit(
+                new SplitParticipant(
                         UUID.randomUUID(),
+                        null,
                         new BigDecimal("50")
                 )
         );
@@ -402,22 +449,26 @@ class PercentageSplitCalculatorTest {
         assertThatThrownBy(() ->
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
-                        percentageSplits
+                        participants
                 )
         )
                 .isInstanceOf(DomainException.class)
-                .hasMessage("total percentage must equal 100");
+                .hasMessage(
+                        "percentage split must equal 100%"
+                );
     }
 
     @Test
     void shouldRejectTotalPercentageGreaterThan100() {
-        List<PercentageSplit> percentageSplits = List.of(
-                new PercentageSplit(
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
                         UUID.randomUUID(),
+                        null,
                         new BigDecimal("60")
                 ),
-                new PercentageSplit(
+                new SplitParticipant(
                         UUID.randomUUID(),
+                        null,
                         new BigDecimal("50")
                 )
         );
@@ -425,24 +476,28 @@ class PercentageSplitCalculatorTest {
         assertThatThrownBy(() ->
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
-                        percentageSplits
+                        participants
                 )
         )
                 .isInstanceOf(DomainException.class)
-                .hasMessage("total percentage must equal 100");
+                .hasMessage(
+                        "percentage split must equal 100%"
+                );
     }
 
     @Test
     void shouldRejectDuplicateParticipants() {
         UUID participantId = UUID.randomUUID();
 
-        List<PercentageSplit> percentageSplits = List.of(
-                new PercentageSplit(
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
                         participantId,
+                        null,
                         new BigDecimal("50")
                 ),
-                new PercentageSplit(
+                new SplitParticipant(
                         participantId,
+                        null,
                         new BigDecimal("50")
                 )
         );
@@ -450,7 +505,7 @@ class PercentageSplitCalculatorTest {
         assertThatThrownBy(() ->
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
-                        percentageSplits
+                        participants
                 )
         )
                 .isInstanceOf(DomainException.class)

@@ -1,12 +1,18 @@
 package com.tafhdev.split_bill_app.expense.controller.dto.request;
 
+import com.tafhdev.split_bill_app.expense.domain.SplitType;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+
 import java.util.List;
-import java.util.UUID;
 
 public record SplitRequest(
-        
-        List<UUID> participants,
-        List<ExactSplitRequest> exactSplits,
-        List<PercentageSplitRequest> percentageSplits
+
+        @NotNull
+        SplitType type,
+
+        @NotEmpty
+        List<@Valid SplitParticipantRequest> participants
 ) {
 }

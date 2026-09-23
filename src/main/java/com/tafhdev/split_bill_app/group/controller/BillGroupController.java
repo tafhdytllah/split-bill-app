@@ -2,11 +2,12 @@ package com.tafhdev.split_bill_app.group.controller;
 
 import com.tafhdev.split_bill_app.group.controller.dto.BillGroupResponse;
 import com.tafhdev.split_bill_app.group.controller.dto.CreateBillGroupRequest;
-import com.tafhdev.split_bill_app.group.controller.dto.ParticipantResponse;
-import com.tafhdev.split_bill_app.group.domain.BillGroup;
+import com.tafhdev.split_bill_app.group.controller.mapper.BillGroupResponseMapper;
 import com.tafhdev.split_bill_app.group.service.BillGroupService;
+import com.tafhdev.split_bill_app.group.service.dto.CreateBillGroupResult;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -14,36 +15,32 @@ import org.springframework.web.bind.annotation.*;
 public class BillGroupController {
 
     private final BillGroupService billGroupService;
+    private final BillGroupResponseMapper billGroupResponseMapper;
 
     public BillGroupController(
-            BillGroupService billGroupService
+            BillGroupService billGroupService,
+            BillGroupResponseMapper billGroupResponseMapper
     ) {
         this.billGroupService = billGroupService;
+        this.billGroupResponseMapper = billGroupResponseMapper;
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public BillGroupResponse createGroup(
+    public ResponseEntity<BillGroupResponse> createGroup(
             @Valid @RequestBody CreateBillGroupRequest request
     ) {
 
-        BillGroup billGroup = billGroupService.createGroup(
+        CreateBillGroupResult result = billGroupService.createGroup(
                 request.name(),
                 request.participants()
         );
 
-        return new BillGroupResponse(
-                billGroup.getId(),
-                billGroup.getName(),
-                billGroup.getParticipants().stream()
-                        .map(participant ->
-                                new ParticipantResponse(
-                                        participant.getId(),
-                                        participant.getName()
-                                )
-                        )
-                        .toList(),
-                billGroup.getCreatedAt()
+        BillGroupResponse billGroupResponse = billGroupResponseMapper.toResponse(
+                result.billGroup()
         );
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(billGroupResponse);
     }
 }

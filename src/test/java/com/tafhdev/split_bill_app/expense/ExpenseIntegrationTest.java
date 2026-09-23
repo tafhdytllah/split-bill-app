@@ -1,11 +1,11 @@
 package com.tafhdev.split_bill_app.expense;
 
-import com.tafhdev.split_bill_app.expense.controller.dto.request.ExactSplitRequest;
-import com.tafhdev.split_bill_app.expense.controller.dto.request.PercentageSplitRequest;
+import com.tafhdev.split_bill_app.expense.controller.dto.request.SplitParticipantRequest;
 import com.tafhdev.split_bill_app.expense.controller.dto.request.SplitRequest;
 import com.tafhdev.split_bill_app.expense.controller.dto.response.ExpenseResponse;
 import com.tafhdev.split_bill_app.expense.domain.Expense;
 import com.tafhdev.split_bill_app.expense.domain.ExpenseSplit;
+import com.tafhdev.split_bill_app.group.service.dto.CreateBillGroupResult;
 import tools.jackson.databind.ObjectMapper;
 import com.tafhdev.split_bill_app.expense.controller.dto.request.CreateExpenseRequest;
 import com.tafhdev.split_bill_app.expense.domain.ExpenseCategory;
@@ -52,36 +52,46 @@ class ExpenseIntegrationTest {
     @Test
     void shouldCreateExpenseUsingEqualSplit() throws Exception {
 
-        BillGroup group = billGroupService.createGroup(
+        CreateBillGroupResult group = billGroupService.createGroup(
                 "Dinner",
                 List.of("Taufik", "Fitri", "Budi")
         );
 
-        UUID groupId = group.getId();
+        UUID groupId = group.billGroup().getId();
 
         UUID participant1 =
-                group.getParticipants().get(0).getId();
+                group.billGroup().getParticipants().getFirst().getId();
 
         UUID participant2 =
-                group.getParticipants().get(1).getId();
+                group.billGroup().getParticipants().get(1).getId();
 
         UUID participant3 =
-                group.getParticipants().get(2).getId();
+                group.billGroup().getParticipants().get(2).getId();
 
         CreateExpenseRequest request =
                 new CreateExpenseRequest(
                         participant1,
                         new BigDecimal("300000.00"),
                         ExpenseCategory.FOOD,
-                        SplitType.EQUAL,
                         new SplitRequest(
+                                SplitType.EQUAL,
                                 List.of(
-                                        participant1,
-                                        participant2,
-                                        participant3
-                                ),
-                                null,
-                                null
+                                        new SplitParticipantRequest(
+                                                participant1,
+                                                null,
+                                                null
+                                        ),
+                                        new SplitParticipantRequest(
+                                                participant2,
+                                                null,
+                                                null
+                                        ),
+                                        new SplitParticipantRequest(
+                                                participant3,
+                                                null,
+                                                null
+                                        )
+                                )
                         )
                 );
 
@@ -187,45 +197,46 @@ class ExpenseIntegrationTest {
     @Test
     void shouldCreateExpenseUsingExactSplit() throws Exception {
 
-        BillGroup group = billGroupService.createGroup(
-                "Hotel",
+        CreateBillGroupResult group = billGroupService.createGroup(
+                "Dinner",
                 List.of("Taufik", "Fitri", "Budi")
         );
 
-        UUID groupId = group.getId();
+        UUID groupId = group.billGroup().getId();
 
         UUID participant1 =
-                group.getParticipants().get(0).getId();
+                group.billGroup().getParticipants().getFirst().getId();
 
         UUID participant2 =
-                group.getParticipants().get(1).getId();
+                group.billGroup().getParticipants().get(1).getId();
 
         UUID participant3 =
-                group.getParticipants().get(2).getId();
+                group.billGroup().getParticipants().get(2).getId();
 
         CreateExpenseRequest request =
                 new CreateExpenseRequest(
                         participant1,
                         new BigDecimal("300.00"),
                         ExpenseCategory.ACCOMMODATION,
-                        SplitType.EXACT,
                         new SplitRequest(
-                                null,
+                                SplitType.EXACT,
                                 List.of(
-                                        new ExactSplitRequest(
+                                        new SplitParticipantRequest(
                                                 participant1,
-                                                new BigDecimal("210.00")
+                                                new BigDecimal("210.00"),
+                                                null
                                         ),
-                                        new ExactSplitRequest(
+                                        new SplitParticipantRequest(
                                                 participant2,
-                                                new BigDecimal("50.00")
+                                                new BigDecimal("50.00"),
+                                                null
                                         ),
-                                        new ExactSplitRequest(
+                                        new SplitParticipantRequest(
                                                 participant3,
-                                                new BigDecimal("40.00")
+                                                new BigDecimal("40.00"),
+                                                null
                                         )
-                                ),
-                                null
+                                )
                         )
                 );
 
@@ -317,35 +328,35 @@ class ExpenseIntegrationTest {
     @Test
     void shouldCreateExpenseUsingPercentageSplit() throws Exception {
 
-        BillGroup group = billGroupService.createGroup(
+        CreateBillGroupResult group = billGroupService.createGroup(
                 "Lunch",
                 List.of("Taufik", "Budi")
         );
 
-        UUID groupId = group.getId();
+        UUID groupId = group.billGroup().getId();
 
         UUID participant1 =
-                group.getParticipants().get(0).getId();
+                group.billGroup().getParticipants().getFirst().getId();
 
         UUID participant2 =
-                group.getParticipants().get(1).getId();
+                group.billGroup().getParticipants().get(1).getId();
 
         CreateExpenseRequest request =
                 new CreateExpenseRequest(
                         participant1,
                         new BigDecimal("100.00"),
                         ExpenseCategory.FOOD,
-                        SplitType.PERCENTAGE,
                         new SplitRequest(
-                                null,
-                                null,
+                                SplitType.PERCENTAGE,
                                 List.of(
-                                        new PercentageSplitRequest(
+                                        new SplitParticipantRequest(
                                                 participant1,
+                                                null,
                                                 new BigDecimal("60")
                                         ),
-                                        new PercentageSplitRequest(
+                                        new SplitParticipantRequest(
                                                 participant2,
+                                                null,
                                                 new BigDecimal("40")
                                         )
                                 )
@@ -437,15 +448,18 @@ class ExpenseIntegrationTest {
     @Test
     void shouldRejectExpenseWhenPaidByNotInGroup() throws Exception {
 
-        BillGroup group = billGroupService.createGroup(
+        CreateBillGroupResult group = billGroupService.createGroup(
                 "Dinner",
                 List.of("Taufik", "Fitri")
         );
 
-        UUID groupId = group.getId();
+        UUID groupId = group.billGroup().getId();
 
         UUID participant1 =
-                group.getParticipants().getFirst().getId();
+                group.billGroup().getParticipants().getFirst().getId();
+
+        UUID participant2 =
+                group.billGroup().getParticipants().get(1).getId();
 
         UUID outsider = UUID.randomUUID();
 
@@ -454,11 +468,20 @@ class ExpenseIntegrationTest {
                         outsider,
                         new BigDecimal("100000.00"),
                         ExpenseCategory.FOOD,
-                        SplitType.EQUAL,
                         new SplitRequest(
-                                List.of(participant1),
-                                null,
-                                null
+                                SplitType.EQUAL,
+                                List.of(
+                                        new SplitParticipantRequest(
+                                                participant1,
+                                                null,
+                                                null
+                                        ),
+                                        new SplitParticipantRequest(
+                                                participant2,
+                                                null,
+                                                null
+                                        )
+                                )
                         )
                 );
 
@@ -478,15 +501,18 @@ class ExpenseIntegrationTest {
     @Test
     void shouldRejectExpenseWhenSplitParticipantNotInGroup() throws Exception {
 
-        BillGroup group = billGroupService.createGroup(
+        CreateBillGroupResult group = billGroupService.createGroup(
                 "Dinner",
                 List.of("Taufik", "Fitri")
         );
 
-        UUID groupId = group.getId();
+        UUID groupId = group.billGroup().getId();
 
         UUID participant1 =
-                group.getParticipants().getFirst().getId();
+                group.billGroup().getParticipants().getFirst().getId();
+
+        UUID participant2 =
+                group.billGroup().getParticipants().get(1).getId();
 
         UUID outsider = UUID.randomUUID();
 
@@ -495,14 +521,20 @@ class ExpenseIntegrationTest {
                         participant1,
                         new BigDecimal("100000.00"),
                         ExpenseCategory.FOOD,
-                        SplitType.EQUAL,
                         new SplitRequest(
+                                SplitType.EQUAL,
                                 List.of(
-                                        participant1,
-                                        outsider
-                                ),
-                                null,
-                                null
+                                        new SplitParticipantRequest(
+                                                participant1,
+                                                null,
+                                                null
+                                        ),
+                                        new SplitParticipantRequest(
+                                                outsider,
+                                                null,
+                                                null
+                                        )
+                                )
                         )
                 );
 
@@ -530,11 +562,20 @@ class ExpenseIntegrationTest {
                         participantId,
                         new BigDecimal("100000.00"),
                         ExpenseCategory.FOOD,
-                        SplitType.EQUAL,
                         new SplitRequest(
-                                List.of(participantId),
-                                null,
-                                null
+                                SplitType.EQUAL,
+                                List.of(
+                                        new SplitParticipantRequest(
+                                                participantId,
+                                                null,
+                                                null
+                                        ),
+                                        new SplitParticipantRequest(
+                                                UUID.randomUUID(),
+                                                null,
+                                                null
+                                        )
+                                )
                         )
                 );
 
@@ -552,21 +593,19 @@ class ExpenseIntegrationTest {
     }
 
     @Test
-    void shouldRejectInvalidExpenseRequest()
-            throws Exception {
+    void shouldRejectInvalidExpenseRequest() throws Exception {
 
-        BillGroup group = billGroupService.createGroup(
+        CreateBillGroupResult group = billGroupService.createGroup(
                 "Dinner",
                 List.of("Taufik", "Fitri")
         );
 
-        UUID groupId = group.getId();
+        UUID groupId = group.billGroup().getId();
 
         CreateExpenseRequest request =
                 new CreateExpenseRequest(
                         null,
                         new BigDecimal("0.00"),
-                        null,
                         null,
                         null
                 );

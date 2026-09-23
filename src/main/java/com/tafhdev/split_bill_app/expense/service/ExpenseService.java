@@ -1,11 +1,8 @@
 package com.tafhdev.split_bill_app.expense.service;
 
 import com.tafhdev.split_bill_app.expense.controller.dto.request.CreateExpenseRequest;
-import com.tafhdev.split_bill_app.expense.domain.Expense;
-import com.tafhdev.split_bill_app.expense.domain.ExpenseCategory;
-import com.tafhdev.split_bill_app.expense.domain.ExpenseSplit;
-import com.tafhdev.split_bill_app.expense.domain.SplitType;
-import com.tafhdev.split_bill_app.expense.domain.split.*;
+import com.tafhdev.split_bill_app.expense.domain.*;
+import com.tafhdev.split_bill_app.expense.domain.calculator.SplitCalculator;
 import com.tafhdev.split_bill_app.expense.repository.ExpenseRepository;
 import com.tafhdev.split_bill_app.expense.service.dto.CreateExpenseResult;
 import com.tafhdev.split_bill_app.group.domain.BillGroup;
@@ -20,35 +17,27 @@ import org.springframework.stereotype.Service;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class ExpenseService {
 
     private final ExpenseRepository expenseRepository;
     private final BillGroupRepository billGroupRepository;
-    private final ExactSplitCalculator exactSplitCalculator;
-    private final PercentageSplitCalculator percentageSplitCalculator;
-    private final EqualSplitCalculator equalSplitCalculator;
+    private final SplitCalculatorResolver splitCalculatorResolver;
     private final IdGenerator idGenerator;
     private final Clock clock;
 
     public ExpenseService(
             ExpenseRepository expenseRepository,
             BillGroupRepository billGroupRepository,
-            ExactSplitCalculator exactSplitCalculator,
-            PercentageSplitCalculator percentageSplitCalculator,
-            EqualSplitCalculator equalSplitCalculator,
+            SplitCalculatorResolver splitCalculatorResolver,
             IdGenerator idGenerator,
             Clock clock
     ) {
         this.expenseRepository = expenseRepository;
         this.billGroupRepository = billGroupRepository;
-        this.exactSplitCalculator = exactSplitCalculator;
-        this.percentageSplitCalculator = percentageSplitCalculator;
-        this.equalSplitCalculator = equalSplitCalculator;
+        this.splitCalculatorResolver = splitCalculatorResolver;
         this.idGenerator = idGenerator;
         this.clock = clock;
     }
@@ -65,50 +54,42 @@ public class ExpenseService {
         BillGroup billGroup = billGroupRepository.findById(groupId)
                 .orElseThrow(() -> new DomainException("bill group not found"));
 
-        Set<UUID> participantIds = billGroup.getParticipants()
-                .stream()
-                .map(Participant::getId)
-                .collect(Collectors.toSet());
+        Participant payer = billGroup.requireParticipant(request.paidBy());
 
-        validateParticipants(
-                participantIds,
-                request
-        );
+        request.split().participants()
+                .forEach(participant ->
+                        billGroup.requireParticipant(
+                                participant.participantId()
+                        ));
 
-        List<ExpenseSplit> splits = switch (request.splitType()) {
-            case EQUAL -> equalSplitCalculator.calculate(
-                    amount,
-                    request.split().participants()
-            );
+        List<SplitParticipant> participants =
+                request.split().participants()
+                        .stream()
+                        .map(participant -> new SplitParticipant(
+                                participant.participantId(),
+                                participant.amount() != null ? Money.of(participant.amount()) : null,
+                                participant.percentage()
+                        ))
+                        .toList();
 
-            case EXACT -> exactSplitCalculator.calculate(
-                    amount,
-                    request.split().exactSplits().stream()
-                            .map(split -> new ExactSplit(
-                                    split.participantId(),
-                                    Money.of(split.amount())
-                            ))
-                            .toList()
-            );
+        SplitCalculator calculator =
+                splitCalculatorResolver.resolve(
+                        request.split().type()
+                );
 
-            case PERCENTAGE -> percentageSplitCalculator.calculate(
-                    amount,
-                    request.split().percentageSplits().stream()
-                            .map(split -> new PercentageSplit(
-                                    split.participantId(),
-                                    split.percentage()
-                            ))
-                            .toList()
-            );
-        };
+        List<ExpenseSplit> splits =
+                calculator.calculate(
+                        amount,
+                        participants
+                );
 
         Expense expense = Expense.createNew(
                 expenseId,
                 groupId,
-                request.paidBy(),
+                payer.getId(),
                 amount,
                 request.category(),
-                request.splitType(),
+                request.split().type(),
                 splits,
                 createdAt
         );
@@ -119,53 +100,5 @@ public class ExpenseService {
                 savedExpense,
                 billGroup.getParticipants()
         );
-    }
-
-    private void validateParticipants(
-            Set<UUID> groupParticipantIds,
-            CreateExpenseRequest request
-    ) {
-        if (!groupParticipantIds.contains(request.paidBy())) {
-            throw new DomainException(
-                    "paid by participant does not belong to group"
-            );
-        }
-
-        switch (request.splitType()) {
-            case EQUAL -> request.split().participants()
-                    .forEach(participantId ->
-                            validateParticipant(
-                                    groupParticipantIds,
-                                    participantId
-                            )
-                    );
-
-            case EXACT -> request.split().exactSplits()
-                    .forEach(split ->
-                            validateParticipant(
-                                    groupParticipantIds,
-                                    split.participantId()
-                            )
-                    );
-
-            case PERCENTAGE -> request.split().percentageSplits()
-                    .forEach(split ->
-                            validateParticipant(
-                                    groupParticipantIds,
-                                    split.participantId()
-                            )
-                    );
-        }
-    }
-
-    private void validateParticipant(
-            Set<UUID> groupParticipantIds,
-            UUID participantId
-    ) {
-        if (!groupParticipantIds.contains(participantId)) {
-            throw new DomainException(
-                    "participant does not belong to group"
-            );
-        }
     }
 }

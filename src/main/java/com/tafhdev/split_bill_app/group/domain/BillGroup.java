@@ -85,6 +85,17 @@ public class BillGroup {
             );
         }
 
+        long uniqueIdCount = participants.stream()
+                .map(Participant::getId)
+                .distinct()
+                .count();
+
+        if (uniqueIdCount != participants.size()) {
+            throw new DomainException(
+                    "participant ids must be unique"
+            );
+        }
+
         long uniqueNameCount = participants.stream()
                 .map(Participant::getName)
                 .distinct()
@@ -96,6 +107,24 @@ public class BillGroup {
             );
         }
     }
+
+    public Participant requireParticipant(
+            UUID participantId
+    ) {
+        Guard.requireNotNull(participantId, "participant id");
+
+        return participants.stream()
+                .filter(participant ->
+                        participant.getId().equals(participantId)
+                )
+                .findFirst()
+                .orElseThrow(() ->
+                        new DomainException(
+                                "participant does not belong to group"
+                        )
+                );
+    }
+
 
     public UUID getId() {
         return id;

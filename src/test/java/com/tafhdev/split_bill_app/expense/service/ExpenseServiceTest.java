@@ -1,14 +1,10 @@
 package com.tafhdev.split_bill_app.expense.service;
 
 import com.tafhdev.split_bill_app.expense.controller.dto.request.CreateExpenseRequest;
-import com.tafhdev.split_bill_app.expense.controller.dto.request.ExactSplitRequest;
-import com.tafhdev.split_bill_app.expense.controller.dto.request.PercentageSplitRequest;
+import com.tafhdev.split_bill_app.expense.controller.dto.request.SplitParticipantRequest;
 import com.tafhdev.split_bill_app.expense.controller.dto.request.SplitRequest;
-import com.tafhdev.split_bill_app.expense.domain.Expense;
-import com.tafhdev.split_bill_app.expense.domain.ExpenseCategory;
-import com.tafhdev.split_bill_app.expense.domain.ExpenseSplit;
-import com.tafhdev.split_bill_app.expense.domain.SplitType;
-import com.tafhdev.split_bill_app.expense.domain.split.*;
+import com.tafhdev.split_bill_app.expense.domain.*;
+import com.tafhdev.split_bill_app.expense.domain.calculator.SplitCalculator;
 import com.tafhdev.split_bill_app.expense.repository.ExpenseRepository;
 import com.tafhdev.split_bill_app.expense.service.dto.CreateExpenseResult;
 import com.tafhdev.split_bill_app.group.domain.BillGroup;
@@ -37,28 +33,23 @@ class ExpenseServiceTest {
     private final BillGroupRepository billGroupRepository =
             mock(BillGroupRepository.class);
 
+    private final SplitCalculatorResolver splitCalculatorResolver =
+            mock(SplitCalculatorResolver.class);
+
     private final IdGenerator idGenerator =
             mock(IdGenerator.class);
 
     private final Clock clock =
             mock(Clock.class);
 
-    private final EqualSplitCalculator equalSplitCalculator =
-            mock(EqualSplitCalculator.class);
-
-    private final ExactSplitCalculator exactSplitCalculator =
-            mock(ExactSplitCalculator.class);
-
-    private final PercentageSplitCalculator percentageSplitCalculator =
-            mock(PercentageSplitCalculator.class);
+    private final SplitCalculator splitCalculator =
+            mock(SplitCalculator.class);
 
     private final ExpenseService expenseService =
             new ExpenseService(
                     expenseRepository,
                     billGroupRepository,
-                    exactSplitCalculator,
-                    percentageSplitCalculator,
-                    equalSplitCalculator,
+                    splitCalculatorResolver,
                     idGenerator,
                     clock
             );
@@ -68,12 +59,15 @@ class ExpenseServiceTest {
         UUID participant1 = UUID.randomUUID();
         UUID participant2 = UUID.randomUUID();
         UUID participant3 = UUID.randomUUID();
+
         UUID expenseId = UUID.randomUUID();
         UUID groupId = UUID.randomUUID();
 
-        Instant createdAt = Instant.parse("2026-09-16T10:00:00Z");
+        Instant createdAt =
+                Instant.parse("2026-09-16T10:00:00Z");
 
-        Money amount = Money.of(new BigDecimal("300000.00"));
+        Money amount =
+                Money.of(new BigDecimal("300000.00"));
 
         Participant participant1Entity = Participant.createNew(
                 participant1,
@@ -107,10 +101,22 @@ class ExpenseServiceTest {
                 createdAt
         );
 
-        List<UUID> participantIds = List.of(
-                participant1,
-                participant2,
-                participant3
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
+                        participant1,
+                        null,
+                        null
+                ),
+                new SplitParticipant(
+                        participant2,
+                        null,
+                        null
+                ),
+                new SplitParticipant(
+                        participant3,
+                        null,
+                        null
+                )
         );
 
         List<ExpenseSplit> splits = List.of(
@@ -136,15 +142,25 @@ class ExpenseServiceTest {
                         participant1,
                         new BigDecimal("300000.00"),
                         ExpenseCategory.FOOD,
-                        SplitType.EQUAL,
                         new SplitRequest(
+                                SplitType.EQUAL,
                                 List.of(
-                                        participant1,
-                                        participant2,
-                                        participant3
-                                ),
-                                null,
-                                null
+                                        new SplitParticipantRequest(
+                                                participant1,
+                                                null,
+                                                null
+                                        ),
+                                        new SplitParticipantRequest(
+                                                participant2,
+                                                null,
+                                                null
+                                        ),
+                                        new SplitParticipantRequest(
+                                                participant3,
+                                                null,
+                                                null
+                                        )
+                                )
                         )
                 );
 
@@ -157,9 +173,13 @@ class ExpenseServiceTest {
         when(billGroupRepository.findById(groupId))
                 .thenReturn(Optional.of(billGroup));
 
-        when(equalSplitCalculator.calculate(
+        when(splitCalculatorResolver.resolve(
+                SplitType.EQUAL
+        )).thenReturn(splitCalculator);
+
+        when(splitCalculator.calculate(
                 amount,
-                participantIds
+                participants
         )).thenReturn(splits);
 
         Expense expectedExpense = Expense.createNew(
@@ -192,19 +212,17 @@ class ExpenseServiceTest {
                         participant3Entity
                 );
 
-        verify(equalSplitCalculator)
-                .calculate(amount, participantIds);
+        verify(splitCalculatorResolver)
+                .resolve(SplitType.EQUAL);
+
+        verify(splitCalculator)
+                .calculate(amount, participants);
 
         verify(expenseRepository)
                 .save(any(Expense.class));
 
         verify(billGroupRepository)
                 .findById(groupId);
-
-        verifyNoInteractions(
-                exactSplitCalculator,
-                percentageSplitCalculator
-        );
     }
 
     @Test
@@ -215,9 +233,11 @@ class ExpenseServiceTest {
         UUID participant2 = UUID.randomUUID();
         UUID participant3 = UUID.randomUUID();
 
-        Instant createdAt = Instant.parse("2026-09-16T10:00:00Z");
+        Instant createdAt =
+                Instant.parse("2026-09-16T10:00:00Z");
 
-        Money amount = Money.of(new BigDecimal("300.00"));
+        Money amount =
+                Money.of(new BigDecimal("300.00"));
 
         Participant participant1Entity = Participant.createNew(
                 participant1,
@@ -251,33 +271,21 @@ class ExpenseServiceTest {
                 createdAt
         );
 
-        List<ExactSplitRequest> exactSplitRequests = List.of(
-                new ExactSplitRequest(
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
                         participant1,
-                        new BigDecimal("210.00")
+                        Money.of(new BigDecimal("210.00")),
+                        null
                 ),
-                new ExactSplitRequest(
+                new SplitParticipant(
                         participant2,
-                        new BigDecimal("50.00")
+                        Money.of(new BigDecimal("50.00")),
+                        null
                 ),
-                new ExactSplitRequest(
+                new SplitParticipant(
                         participant3,
-                        new BigDecimal("40.00")
-                )
-        );
-
-        List<ExactSplit> exactSplits = List.of(
-                new ExactSplit(
-                        participant1,
-                        Money.of(new BigDecimal("210.00"))
-                ),
-                new ExactSplit(
-                        participant2,
-                        Money.of(new BigDecimal("50.00"))
-                ),
-                new ExactSplit(
-                        participant3,
-                        Money.of(new BigDecimal("40.00"))
+                        Money.of(new BigDecimal("40.00")),
+                        null
                 )
         );
 
@@ -304,11 +312,25 @@ class ExpenseServiceTest {
                         participant2,
                         new BigDecimal("300.00"),
                         ExpenseCategory.FOOD,
-                        SplitType.EXACT,
                         new SplitRequest(
-                                null,
-                                exactSplitRequests,
-                                null
+                                SplitType.EXACT,
+                                List.of(
+                                        new SplitParticipantRequest(
+                                                participant1,
+                                                new BigDecimal("210.00"),
+                                                null
+                                        ),
+                                        new SplitParticipantRequest(
+                                                participant2,
+                                                new BigDecimal("50.00"),
+                                                null
+                                        ),
+                                        new SplitParticipantRequest(
+                                                participant3,
+                                                new BigDecimal("40.00"),
+                                                null
+                                        )
+                                )
                         )
                 );
 
@@ -321,9 +343,13 @@ class ExpenseServiceTest {
         when(billGroupRepository.findById(groupId))
                 .thenReturn(Optional.of(billGroup));
 
-        when(exactSplitCalculator.calculate(
+        when(splitCalculatorResolver.resolve(
+                SplitType.EXACT
+        )).thenReturn(splitCalculator);
+
+        when(splitCalculator.calculate(
                 amount,
-                exactSplits
+                participants
         )).thenReturn(splits);
 
         Expense expectedExpense = Expense.createNew(
@@ -356,19 +382,17 @@ class ExpenseServiceTest {
                         participant3Entity
                 );
 
-        verify(exactSplitCalculator)
-                .calculate(amount, exactSplits);
+        verify(splitCalculatorResolver)
+                .resolve(SplitType.EXACT);
+
+        verify(splitCalculator)
+                .calculate(amount, participants);
 
         verify(expenseRepository)
                 .save(any(Expense.class));
 
         verify(billGroupRepository)
                 .findById(groupId);
-
-        verifyNoInteractions(
-                equalSplitCalculator,
-                percentageSplitCalculator
-        );
     }
 
     @Test
@@ -381,9 +405,8 @@ class ExpenseServiceTest {
         Instant createdAt =
                 Instant.parse("2026-09-16T10:00:00Z");
 
-        Money amount = Money.of(
-                new BigDecimal("100.00")
-        );
+        Money amount =
+                Money.of(new BigDecimal("100.00"));
 
         Participant participant1Entity = Participant.createNew(
                 participant1,
@@ -409,24 +432,15 @@ class ExpenseServiceTest {
                 createdAt
         );
 
-        List<PercentageSplitRequest> percentageSplitRequests = List.of(
-                new PercentageSplitRequest(
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
                         participant1,
+                        null,
                         new BigDecimal("60")
                 ),
-                new PercentageSplitRequest(
+                new SplitParticipant(
                         participant2,
-                        new BigDecimal("40")
-                )
-        );
-
-        List<PercentageSplit> percentageSplits = List.of(
-                new PercentageSplit(
-                        participant1,
-                        new BigDecimal("60")
-                ),
-                new PercentageSplit(
-                        participant2,
+                        null,
                         new BigDecimal("40")
                 )
         );
@@ -449,11 +463,20 @@ class ExpenseServiceTest {
                         participant2,
                         new BigDecimal("100.00"),
                         ExpenseCategory.FOOD,
-                        SplitType.PERCENTAGE,
                         new SplitRequest(
-                                null,
-                                null,
-                                percentageSplitRequests
+                                SplitType.PERCENTAGE,
+                                List.of(
+                                        new SplitParticipantRequest(
+                                                participant1,
+                                                null,
+                                                new BigDecimal("60")
+                                        ),
+                                        new SplitParticipantRequest(
+                                                participant2,
+                                                null,
+                                                new BigDecimal("40")
+                                        )
+                                )
                         )
                 );
 
@@ -466,9 +489,13 @@ class ExpenseServiceTest {
         when(billGroupRepository.findById(groupId))
                 .thenReturn(Optional.of(billGroup));
 
-        when(percentageSplitCalculator.calculate(
+        when(splitCalculatorResolver.resolve(
+                SplitType.PERCENTAGE
+        )).thenReturn(splitCalculator);
+
+        when(splitCalculator.calculate(
                 amount,
-                percentageSplits
+                participants
         )).thenReturn(splits);
 
         Expense expectedExpense = Expense.createNew(
@@ -500,18 +527,16 @@ class ExpenseServiceTest {
                         participant2Entity
                 );
 
-        verify(percentageSplitCalculator)
-                .calculate(amount, percentageSplits);
+        verify(splitCalculatorResolver)
+                .resolve(SplitType.PERCENTAGE);
+
+        verify(splitCalculator)
+                .calculate(amount, participants);
 
         verify(expenseRepository)
                 .save(any(Expense.class));
 
         verify(billGroupRepository)
                 .findById(groupId);
-
-        verifyNoInteractions(
-                equalSplitCalculator,
-                exactSplitCalculator
-        );
     }
 }

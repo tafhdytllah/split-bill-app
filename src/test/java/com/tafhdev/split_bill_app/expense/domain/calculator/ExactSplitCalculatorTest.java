@@ -1,6 +1,7 @@
-package com.tafhdev.split_bill_app.expense.domain.split;
+package com.tafhdev.split_bill_app.expense.domain.calculator;
 
 import com.tafhdev.split_bill_app.expense.domain.ExpenseSplit;
+import com.tafhdev.split_bill_app.expense.domain.SplitParticipant;
 import com.tafhdev.split_bill_app.shared.domain.Money;
 import com.tafhdev.split_bill_app.shared.domain.exception.DomainException;
 import com.tafhdev.split_bill_app.shared.infrastructure.generator.IdGenerator;
@@ -36,24 +37,27 @@ class ExactSplitCalculatorTest {
         UUID participant2 = UUID.randomUUID();
         UUID participant3 = UUID.randomUUID();
 
-        List<ExactSplit> exactSplits = List.of(
-                new ExactSplit(
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
                         participant1,
-                        Money.of(new BigDecimal("150.00"))
+                        Money.of(new BigDecimal("150.00")),
+                        null
                 ),
-                new ExactSplit(
+                new SplitParticipant(
                         participant2,
-                        Money.of(new BigDecimal("100.00"))
+                        Money.of(new BigDecimal("100.00")),
+                        null
                 ),
-                new ExactSplit(
+                new SplitParticipant(
                         participant3,
-                        Money.of(new BigDecimal("50.00"))
+                        Money.of(new BigDecimal("50.00")),
+                        null
                 )
         );
 
         List<ExpenseSplit> result = calculator.calculate(
                 Money.of(new BigDecimal("300.00")),
-                exactSplits
+                participants
         );
 
         assertThat(result)
@@ -73,23 +77,22 @@ class ExactSplitCalculatorTest {
                         UUID.randomUUID()
                 );
 
-        UUID participant1 = UUID.randomUUID();
-        UUID participant2 = UUID.randomUUID();
-
-        List<ExactSplit> exactSplits = List.of(
-                new ExactSplit(
-                        participant1,
-                        Money.of(new BigDecimal("150.25"))
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        Money.of(new BigDecimal("150.25")),
+                        null
                 ),
-                new ExactSplit(
-                        participant2,
-                        Money.of(new BigDecimal("149.75"))
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        Money.of(new BigDecimal("149.75")),
+                        null
                 )
         );
 
         List<ExpenseSplit> result = calculator.calculate(
                 Money.of(new BigDecimal("300.00")),
-                exactSplits
+                participants
         );
 
         Money total = result.stream()
@@ -111,23 +114,22 @@ class ExactSplitCalculatorTest {
                         UUID.randomUUID()
                 );
 
-        UUID participant1 = UUID.randomUUID();
-        UUID participant2 = UUID.randomUUID();
-
-        List<ExactSplit> exactSplits = List.of(
-                new ExactSplit(
-                        participant1,
-                        Money.of(new BigDecimal("100.00"))
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        Money.of(new BigDecimal("100.00")),
+                        null
                 ),
-                new ExactSplit(
-                        participant2,
-                        Money.of(new BigDecimal("0.00"))
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        Money.of(new BigDecimal("0.00")),
+                        null
                 )
         );
 
         List<ExpenseSplit> result = calculator.calculate(
                 Money.of(new BigDecimal("100.00")),
-                exactSplits
+                participants
         );
 
         assertThat(result)
@@ -140,24 +142,23 @@ class ExactSplitCalculatorTest {
 
     @Test
     void shouldRejectNullExpenseAmount() {
-        UUID participant1 = UUID.randomUUID();
-        UUID participant2 = UUID.randomUUID();
-
-        List<ExactSplit> exactSplits = List.of(
-                new ExactSplit(
-                        participant1,
-                        Money.of(new BigDecimal("50.00"))
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        Money.of(new BigDecimal("50.00")),
+                        null
                 ),
-                new ExactSplit(
-                        participant2,
-                        Money.of(new BigDecimal("50.00"))
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        Money.of(new BigDecimal("50.00")),
+                        null
                 )
         );
 
         assertThatThrownBy(() ->
                 calculator.calculate(
                         null,
-                        exactSplits
+                        participants
                 )
         )
                 .isInstanceOf(DomainException.class)
@@ -165,7 +166,7 @@ class ExactSplitCalculatorTest {
     }
 
     @Test
-    void shouldRejectNullExactSplits() {
+    void shouldRejectNullParticipants() {
         assertThatThrownBy(() ->
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
@@ -173,24 +174,23 @@ class ExactSplitCalculatorTest {
                 )
         )
                 .isInstanceOf(DomainException.class)
-                .hasMessage("exact splits must not be null");
+                .hasMessage("participants must not be null");
     }
 
     @Test
     void shouldRejectLessThanTwoParticipants() {
-        UUID participantId = UUID.randomUUID();
-
-        List<ExactSplit> exactSplits = List.of(
-                new ExactSplit(
-                        participantId,
-                        Money.of(new BigDecimal("100.00"))
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        Money.of(new BigDecimal("100.00")),
+                        null
                 )
         );
 
         assertThatThrownBy(() ->
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
-                        exactSplits
+                        participants
                 )
         )
                 .isInstanceOf(DomainException.class)
@@ -200,13 +200,12 @@ class ExactSplitCalculatorTest {
     }
 
     @Test
-    void shouldRejectNullExactSplit() {
-        UUID participantId = UUID.randomUUID();
-
-        List<ExactSplit> exactSplits = Arrays.asList(
-                new ExactSplit(
-                        participantId,
-                        Money.of(new BigDecimal("50.00"))
+    void shouldRejectNullParticipant() {
+        List<SplitParticipant> participants = Arrays.asList(
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        Money.of(new BigDecimal("50.00")),
+                        null
                 ),
                 null
         );
@@ -214,30 +213,32 @@ class ExactSplitCalculatorTest {
         assertThatThrownBy(() ->
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
-                        exactSplits
+                        participants
                 )
         )
                 .isInstanceOf(DomainException.class)
-                .hasMessage("exact split must not be null");
+                .hasMessage("split participant must not be null");
     }
 
     @Test
     void shouldRejectNullParticipantId() {
-        List<ExactSplit> exactSplits = Arrays.asList(
-                new ExactSplit(
+        List<SplitParticipant> participants = Arrays.asList(
+                new SplitParticipant(
                         null,
-                        Money.of(new BigDecimal("50.00"))
+                        Money.of(new BigDecimal("50.00")),
+                        null
                 ),
-                new ExactSplit(
+                new SplitParticipant(
                         UUID.randomUUID(),
-                        Money.of(new BigDecimal("50.00"))
+                        Money.of(new BigDecimal("50.00")),
+                        null
                 )
         );
 
         assertThatThrownBy(() ->
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
-                        exactSplits
+                        participants
                 )
         )
                 .isInstanceOf(DomainException.class)
@@ -246,44 +247,54 @@ class ExactSplitCalculatorTest {
 
     @Test
     void shouldRejectNullAmount() {
-        List<ExactSplit> exactSplits = Arrays.asList(
-                new ExactSplit(
+        List<SplitParticipant> participants = Arrays.asList(
+                new SplitParticipant(
                         UUID.randomUUID(),
+                        null,
                         null
                 ),
-                new ExactSplit(
+                new SplitParticipant(
                         UUID.randomUUID(),
-                        Money.of(new BigDecimal("50.00"))
+                        Money.of(new BigDecimal("50.00")),
+                        null
                 )
         );
 
         assertThatThrownBy(() ->
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
-                        exactSplits
+                        participants
                 )
         )
                 .isInstanceOf(DomainException.class)
-                .hasMessage("amount must not be null");
+                .hasMessage("split amount must not be null");
     }
 
     @Test
     void shouldRejectNegativeAmount() {
-        List<ExactSplit> exactSplits = List.of(
-                new ExactSplit(
+        when(idGenerator.generate())
+                .thenReturn(
                         UUID.randomUUID(),
-                        Money.of(new BigDecimal("-50.00"))
+                        UUID.randomUUID()
+                );
+
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        Money.of(new BigDecimal("-50.00")),
+                        null
                 ),
-                new ExactSplit(
+                new SplitParticipant(
                         UUID.randomUUID(),
-                        Money.of(new BigDecimal("150.00"))
+                        Money.of(new BigDecimal("150.00")),
+                        null
                 )
         );
 
         assertThatThrownBy(() ->
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
-                        exactSplits
+                        participants
                 )
         )
                 .isInstanceOf(DomainException.class)
@@ -294,21 +305,23 @@ class ExactSplitCalculatorTest {
     void shouldRejectDuplicateParticipants() {
         UUID participantId = UUID.randomUUID();
 
-        List<ExactSplit> exactSplits = List.of(
-                new ExactSplit(
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
                         participantId,
-                        Money.of(new BigDecimal("50.00"))
+                        Money.of(new BigDecimal("50.00")),
+                        null
                 ),
-                new ExactSplit(
+                new SplitParticipant(
                         participantId,
-                        Money.of(new BigDecimal("50.00"))
+                        Money.of(new BigDecimal("50.00")),
+                        null
                 )
         );
 
         assertThatThrownBy(() ->
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
-                        exactSplits
+                        participants
                 )
         )
                 .isInstanceOf(DomainException.class)
@@ -316,58 +329,93 @@ class ExactSplitCalculatorTest {
     }
 
     @Test
-    void shouldRejectTotalSplitAmountLessThanExpenseAmount() {
-        UUID participant1 = UUID.randomUUID();
-        UUID participant2 = UUID.randomUUID();
-
-        List<ExactSplit> exactSplits = List.of(
-                new ExactSplit(
-                        participant1,
-                        Money.of(new BigDecimal("40.00"))
+    void shouldRejectPercentageInExactSplit() {
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        Money.of(new BigDecimal("50.00")),
+                        new BigDecimal("50")
                 ),
-                new ExactSplit(
-                        participant2,
-                        Money.of(new BigDecimal("50.00"))
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        Money.of(new BigDecimal("50.00")),
+                        null
                 )
         );
 
         assertThatThrownBy(() ->
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
-                        exactSplits
+                        participants
+                )
+        )
+                .isInstanceOf(DomainException.class)
+                .hasMessage("exact split must not have percentage");
+    }
+
+    @Test
+    void shouldRejectTotalSplitAmountLessThanExpenseAmount() {
+        when(idGenerator.generate())
+                .thenReturn(
+                        UUID.randomUUID(),
+                        UUID.randomUUID()
+                );
+
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        Money.of(new BigDecimal("40.00")),
+                        null
+                ),
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        Money.of(new BigDecimal("50.00")),
+                        null
+                )
+        );
+
+        assertThatThrownBy(() ->
+                calculator.calculate(
+                        Money.of(new BigDecimal("100.00")),
+                        participants
                 )
         )
                 .isInstanceOf(DomainException.class)
                 .hasMessage(
-                        "total split amount must equal expense amount"
+                        "exact split amounts must equal expense amount"
                 );
     }
 
     @Test
     void shouldRejectTotalSplitAmountGreaterThanExpenseAmount() {
-        UUID participant1 = UUID.randomUUID();
-        UUID participant2 = UUID.randomUUID();
+        when(idGenerator.generate())
+                .thenReturn(
+                        UUID.randomUUID(),
+                        UUID.randomUUID()
+                );
 
-        List<ExactSplit> exactSplits = List.of(
-                new ExactSplit(
-                        participant1,
-                        Money.of(new BigDecimal("60.00"))
+        List<SplitParticipant> participants = List.of(
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        Money.of(new BigDecimal("60.00")),
+                        null
                 ),
-                new ExactSplit(
-                        participant2,
-                        Money.of(new BigDecimal("50.00"))
+                new SplitParticipant(
+                        UUID.randomUUID(),
+                        Money.of(new BigDecimal("50.00")),
+                        null
                 )
         );
 
         assertThatThrownBy(() ->
                 calculator.calculate(
                         Money.of(new BigDecimal("100.00")),
-                        exactSplits
+                        participants
                 )
         )
                 .isInstanceOf(DomainException.class)
                 .hasMessage(
-                        "total split amount must equal expense amount"
+                        "exact split amounts must equal expense amount"
                 );
     }
 }

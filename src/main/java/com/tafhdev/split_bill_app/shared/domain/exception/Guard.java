@@ -18,7 +18,7 @@ public final class Guard {
         return value;
     }
 
-    public static String requireNonBlank(
+    public static void requireNonBlank(
             String value,
             String fieldName
     ) {
@@ -34,6 +34,5 @@ public final class Guard {
             );
         }
 
-        return value;
     }
 }

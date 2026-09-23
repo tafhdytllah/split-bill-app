@@ -1,8 +1,12 @@
 package com.tafhdev.split_bill_app.group.controller;
 
+import com.tafhdev.split_bill_app.group.controller.dto.BillGroupResponse;
+import com.tafhdev.split_bill_app.group.controller.dto.ParticipantResponse;
+import com.tafhdev.split_bill_app.group.controller.mapper.BillGroupResponseMapper;
 import com.tafhdev.split_bill_app.group.domain.BillGroup;
 import com.tafhdev.split_bill_app.group.domain.Participant;
 import com.tafhdev.split_bill_app.group.service.BillGroupService;
+import com.tafhdev.split_bill_app.group.service.dto.CreateBillGroupResult;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -15,7 +19,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -28,6 +32,9 @@ class BillGroupControllerTest {
 
     @MockitoBean
     private BillGroupService billGroupService;
+
+    @MockitoBean
+    private BillGroupResponseMapper billGroupResponseMapper;
 
     @Test
     void shouldCreateGroup() throws Exception {
@@ -59,10 +66,36 @@ class BillGroupControllerTest {
                 createdAt
         );
 
+        CreateBillGroupResult result =
+                mock(CreateBillGroupResult.class);
+
+        BillGroupResponse response =
+                new BillGroupResponse(
+                        groupId,
+                        "Trip Bandung",
+                        List.of(
+                                new ParticipantResponse(
+                                        participantId1,
+                                        "Taufik"
+                                ),
+                                new ParticipantResponse(
+                                        participantId2,
+                                        "Andi"
+                                )
+                        ),
+                        createdAt
+                );
+
         when(billGroupService.createGroup(
                 eq("Trip Bandung"),
                 eq(List.of("Taufik", "Andi"))
-        )).thenReturn(group);
+        )).thenReturn(result);
+
+        when(result.billGroup())
+                .thenReturn(group);
+
+        when(billGroupResponseMapper.toResponse(group))
+                .thenReturn(response);
 
         mockMvc.perform(
                         post("/api/groups")
@@ -78,8 +111,10 @@ class BillGroupControllerTest {
                                 """)
                 )
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(groupId.toString()))
-                .andExpect(jsonPath("$.name").value("Trip Bandung"))
+                .andExpect(jsonPath("$.id")
+                        .value(groupId.toString()))
+                .andExpect(jsonPath("$.name")
+                        .value("Trip Bandung"))
                 .andExpect(jsonPath("$.participants[0].id")
                         .value(participantId1.toString()))
                 .andExpect(jsonPath("$.participants[0].name")
@@ -90,5 +125,12 @@ class BillGroupControllerTest {
                         .value("Andi"))
                 .andExpect(jsonPath("$.createdAt")
                         .value("2026-01-01T00:00:00Z"));
+
+        verify(billGroupService).createGroup(
+                "Trip Bandung",
+                List.of("Taufik", "Andi")
+        );
+
+        verify(billGroupResponseMapper).toResponse(group);
     }
 }

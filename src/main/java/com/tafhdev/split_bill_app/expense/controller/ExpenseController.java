@@ -2,18 +2,14 @@ package com.tafhdev.split_bill_app.expense.controller;
 
 import com.tafhdev.split_bill_app.expense.controller.dto.request.CreateExpenseRequest;
 import com.tafhdev.split_bill_app.expense.controller.dto.response.ExpenseResponse;
-import com.tafhdev.split_bill_app.expense.domain.Expense;
-import com.tafhdev.split_bill_app.expense.domain.split.ExactSplit;
-import com.tafhdev.split_bill_app.expense.domain.split.PercentageSplit;
+import com.tafhdev.split_bill_app.expense.controller.mapper.ExpenseResponseMapper;
 import com.tafhdev.split_bill_app.expense.service.ExpenseService;
 import com.tafhdev.split_bill_app.expense.service.dto.CreateExpenseResult;
-import com.tafhdev.split_bill_app.shared.domain.Money;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -21,9 +17,14 @@ import java.util.UUID;
 public class ExpenseController {
 
     private final ExpenseService expenseService;
+    private final ExpenseResponseMapper expenseResponseMapper;
 
-    public ExpenseController(ExpenseService expenseService) {
+    public ExpenseController(
+            ExpenseService expenseService,
+            ExpenseResponseMapper expenseResponseMapper
+    ) {
         this.expenseService = expenseService;
+        this.expenseResponseMapper = expenseResponseMapper;
     }
 
     @PostMapping
@@ -36,11 +37,13 @@ public class ExpenseController {
                 request
         );
 
+        ExpenseResponse expenseResponse = expenseResponseMapper.toResponse(
+                result.expense(),
+                result.participants()
+        );
+
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ExpenseResponse.from(
-                        result.expense(),
-                        result.participants()
-                ));
+                .body(expenseResponse);
     }
 }
