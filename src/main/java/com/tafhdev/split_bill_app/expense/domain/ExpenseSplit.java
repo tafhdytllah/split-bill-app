@@ -13,7 +13,8 @@ public class ExpenseSplit {
     private final Money amount;
 
     private ExpenseSplit(
-            UUID id, UUID participantId,
+            UUID id,
+            UUID participantId,
             Money amount
     ) {
         this.id = id;

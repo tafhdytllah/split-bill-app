@@ -10,17 +10,20 @@ import java.util.UUID;
 public record ExpenseSplitResponse(
         UUID id,
         UUID participantId,
+        String name,
 
         @JsonSerialize(using = ToStringSerializer.class)
         BigDecimal amount
 ) {
 
     public static ExpenseSplitResponse from(
-            ExpenseSplit expenseSplit
+            ExpenseSplit expenseSplit,
+            String participantName
     ) {
         return new ExpenseSplitResponse(
                 expenseSplit.getId(),
                 expenseSplit.getParticipantId(),
+                participantName,
                 expenseSplit.getAmount().value()
         );
     }

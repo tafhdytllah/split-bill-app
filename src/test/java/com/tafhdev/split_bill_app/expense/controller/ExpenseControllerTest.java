@@ -3,13 +3,14 @@ package com.tafhdev.split_bill_app.expense.controller;
 import com.tafhdev.split_bill_app.expense.controller.dto.request.CreateExpenseRequest;
 import com.tafhdev.split_bill_app.expense.controller.dto.request.ExactSplitRequest;
 import com.tafhdev.split_bill_app.expense.controller.dto.request.PercentageSplitRequest;
+import com.tafhdev.split_bill_app.expense.controller.dto.request.SplitRequest;
 import com.tafhdev.split_bill_app.expense.domain.Expense;
 import com.tafhdev.split_bill_app.expense.domain.ExpenseCategory;
 import com.tafhdev.split_bill_app.expense.domain.ExpenseSplit;
 import com.tafhdev.split_bill_app.expense.domain.SplitType;
-import com.tafhdev.split_bill_app.expense.domain.split.ExactSplit;
-import com.tafhdev.split_bill_app.expense.domain.split.PercentageSplit;
 import com.tafhdev.split_bill_app.expense.service.ExpenseService;
+import com.tafhdev.split_bill_app.expense.service.dto.CreateExpenseResult;
+import com.tafhdev.split_bill_app.group.domain.Participant;
 import com.tafhdev.split_bill_app.shared.domain.Money;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +27,6 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -56,6 +56,23 @@ class ExpenseControllerTest {
         Money expenseAmount =
                 Money.of(new BigDecimal("300000.00"));
 
+        Instant createdAt =
+                Instant.parse("2026-09-16T10:00:00Z");
+
+        Participant participant1Entity = Participant.createNew(
+                participant1,
+                groupId,
+                "Taufik",
+                createdAt
+        );
+
+        Participant participant2Entity = Participant.createNew(
+                participant2,
+                groupId,
+                "Budi",
+                createdAt
+        );
+
         ExpenseSplit split1 = ExpenseSplit.createNew(
                 UUID.randomUUID(),
                 participant1,
@@ -68,9 +85,6 @@ class ExpenseControllerTest {
                 Money.of(new BigDecimal("150000.00"))
         );
 
-        Instant createdAt =
-                Instant.parse("2026-09-16T10:00:00Z");
-
         Expense expense = Expense.createNew(
                 expenseId,
                 groupId,
@@ -82,16 +96,14 @@ class ExpenseControllerTest {
                 createdAt
         );
 
-        when(expenseService.createExpense(
-                eq(groupId),
-                eq(paidBy),
-                eq(expenseAmount),
-                eq(ExpenseCategory.FOOD),
-                eq(SplitType.EQUAL),
-                eq(List.of(participant1, participant2)),
-                isNull(),
-                isNull()
-        )).thenReturn(expense);
+        CreateExpenseResult result =
+                new CreateExpenseResult(
+                        expense,
+                        List.of(
+                                participant1Entity,
+                                participant2Entity
+                        )
+                );
 
         CreateExpenseRequest request =
                 new CreateExpenseRequest(
@@ -99,15 +111,24 @@ class ExpenseControllerTest {
                         new BigDecimal("300000.00"),
                         ExpenseCategory.FOOD,
                         SplitType.EQUAL,
-                        List.of(participant1, participant2),
-                        null,
-                        null
+                        new SplitRequest(
+                                List.of(participant1, participant2),
+                                null,
+                                null
+                        )
                 );
+
+        when(expenseService.createExpense(
+                eq(groupId),
+                eq(request)
+        )).thenReturn(result);
 
         mockMvc.perform(
                         post("/api/groups/{groupId}/expenses", groupId)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request))
+                                .content(
+                                        objectMapper.writeValueAsString(request)
+                                )
                 )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id")
@@ -128,25 +149,24 @@ class ExpenseControllerTest {
                         .value(2))
                 .andExpect(jsonPath("$.splits[0].participantId")
                         .value(participant1.toString()))
+                .andExpect(jsonPath("$.splits[0].name")
+                        .value("Taufik"))
                 .andExpect(jsonPath("$.splits[0].amount")
                         .value(150000.00))
                 .andExpect(jsonPath("$.splits[1].participantId")
                         .value(participant2.toString()))
+                .andExpect(jsonPath("$.splits[1].name")
+                        .value("Budi"))
                 .andExpect(jsonPath("$.splits[1].amount")
                         .value(150000.00))
                 .andExpect(jsonPath("$.createdAt")
                         .value("2026-09-16T10:00:00Z"));
 
-        verify(expenseService).createExpense(
-                eq(groupId),
-                eq(paidBy),
-                eq(expenseAmount),
-                eq(ExpenseCategory.FOOD),
-                eq(SplitType.EQUAL),
-                eq(List.of(participant1, participant2)),
-                isNull(),
-                isNull()
-        );
+        verify(expenseService)
+                .createExpense(
+                        eq(groupId),
+                        eq(request)
+                );
     }
 
     @Test
@@ -164,14 +184,28 @@ class ExpenseControllerTest {
         Instant createdAt =
                 Instant.parse("2026-09-16T10:00:00Z");
 
-        List<ExactSplit> exactSplits = List.of(
-                new ExactSplit(
+        Participant participant1Entity = Participant.createNew(
+                participant1,
+                groupId,
+                "Taufik",
+                createdAt
+        );
+
+        Participant participant2Entity = Participant.createNew(
+                participant2,
+                groupId,
+                "Budi",
+                createdAt
+        );
+
+        List<ExactSplitRequest> exactSplitRequests = List.of(
+                new ExactSplitRequest(
                         participant1,
-                        Money.of(new BigDecimal("200000.00"))
+                        new BigDecimal("200000.00")
                 ),
-                new ExactSplit(
+                new ExactSplitRequest(
                         participant2,
-                        Money.of(new BigDecimal("100000.00"))
+                        new BigDecimal("100000.00")
                 )
         );
 
@@ -198,16 +232,14 @@ class ExpenseControllerTest {
                 createdAt
         );
 
-        when(expenseService.createExpense(
-                eq(groupId),
-                eq(paidBy),
-                eq(expenseAmount),
-                eq(ExpenseCategory.FOOD),
-                eq(SplitType.EXACT),
-                isNull(),
-                eq(exactSplits),
-                isNull()
-        )).thenReturn(expense);
+        CreateExpenseResult result =
+                new CreateExpenseResult(
+                        expense,
+                        List.of(
+                                participant1Entity,
+                                participant2Entity
+                        )
+                );
 
         CreateExpenseRequest request =
                 new CreateExpenseRequest(
@@ -215,24 +247,24 @@ class ExpenseControllerTest {
                         new BigDecimal("300000.00"),
                         ExpenseCategory.FOOD,
                         SplitType.EXACT,
-                        null,
-                        List.of(
-                                new ExactSplitRequest(
-                                        participant1,
-                                        new BigDecimal("200000.00")
-                                ),
-                                new ExactSplitRequest(
-                                        participant2,
-                                        new BigDecimal("100000.00")
-                                )
-                        ),
-                        null
+                        new SplitRequest(
+                                null,
+                                exactSplitRequests,
+                                null
+                        )
                 );
+
+        when(expenseService.createExpense(
+                eq(groupId),
+                eq(request)
+        )).thenReturn(result);
 
         mockMvc.perform(
                         post("/api/groups/{groupId}/expenses", groupId)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request))
+                                .content(
+                                        objectMapper.writeValueAsString(request)
+                                )
                 )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id")
@@ -251,25 +283,24 @@ class ExpenseControllerTest {
                         .value(2))
                 .andExpect(jsonPath("$.splits[0].participantId")
                         .value(participant1.toString()))
+                .andExpect(jsonPath("$.splits[0].name")
+                        .value("Taufik"))
                 .andExpect(jsonPath("$.splits[0].amount")
                         .value(200000.00))
                 .andExpect(jsonPath("$.splits[1].participantId")
                         .value(participant2.toString()))
+                .andExpect(jsonPath("$.splits[1].name")
+                        .value("Budi"))
                 .andExpect(jsonPath("$.splits[1].amount")
                         .value(100000.00))
                 .andExpect(jsonPath("$.createdAt")
                         .value("2026-09-16T10:00:00Z"));
 
-        verify(expenseService).createExpense(
-                eq(groupId),
-                eq(paidBy),
-                eq(expenseAmount),
-                eq(ExpenseCategory.FOOD),
-                eq(SplitType.EXACT),
-                isNull(),
-                eq(exactSplits),
-                isNull()
-        );
+        verify(expenseService)
+                .createExpense(
+                        eq(groupId),
+                        eq(request)
+                );
     }
 
     @Test
@@ -287,12 +318,26 @@ class ExpenseControllerTest {
         Instant createdAt =
                 Instant.parse("2026-09-16T10:00:00Z");
 
-        List<PercentageSplit> percentageSplits = List.of(
-                new PercentageSplit(
+        Participant participant1Entity = Participant.createNew(
+                participant1,
+                groupId,
+                "Taufik",
+                createdAt
+        );
+
+        Participant participant2Entity = Participant.createNew(
+                participant2,
+                groupId,
+                "Budi",
+                createdAt
+        );
+
+        List<PercentageSplitRequest> percentageSplitRequests = List.of(
+                new PercentageSplitRequest(
                         participant1,
                         new BigDecimal("60")
                 ),
-                new PercentageSplit(
+                new PercentageSplitRequest(
                         participant2,
                         new BigDecimal("40")
                 )
@@ -321,16 +366,14 @@ class ExpenseControllerTest {
                 createdAt
         );
 
-        when(expenseService.createExpense(
-                eq(groupId),
-                eq(paidBy),
-                eq(expenseAmount),
-                eq(ExpenseCategory.FOOD),
-                eq(SplitType.PERCENTAGE),
-                isNull(),
-                isNull(),
-                eq(percentageSplits)
-        )).thenReturn(expense);
+        CreateExpenseResult result =
+                new CreateExpenseResult(
+                        expense,
+                        List.of(
+                                participant1Entity,
+                                participant2Entity
+                        )
+                );
 
         CreateExpenseRequest request =
                 new CreateExpenseRequest(
@@ -338,24 +381,24 @@ class ExpenseControllerTest {
                         new BigDecimal("300000.00"),
                         ExpenseCategory.FOOD,
                         SplitType.PERCENTAGE,
-                        null,
-                        null,
-                        List.of(
-                                new PercentageSplitRequest(
-                                        participant1,
-                                        new BigDecimal("60")
-                                ),
-                                new PercentageSplitRequest(
-                                        participant2,
-                                        new BigDecimal("40")
-                                )
+                        new SplitRequest(
+                                null,
+                                null,
+                                percentageSplitRequests
                         )
                 );
+
+        when(expenseService.createExpense(
+                eq(groupId),
+                eq(request)
+        )).thenReturn(result);
 
         mockMvc.perform(
                         post("/api/groups/{groupId}/expenses", groupId)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request))
+                                .content(
+                                        objectMapper.writeValueAsString(request)
+                                )
                 )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id")
@@ -374,25 +417,24 @@ class ExpenseControllerTest {
                         .value(2))
                 .andExpect(jsonPath("$.splits[0].participantId")
                         .value(participant1.toString()))
+                .andExpect(jsonPath("$.splits[0].name")
+                        .value("Taufik"))
                 .andExpect(jsonPath("$.splits[0].amount")
                         .value(180000.00))
                 .andExpect(jsonPath("$.splits[1].participantId")
                         .value(participant2.toString()))
+                .andExpect(jsonPath("$.splits[1].name")
+                        .value("Budi"))
                 .andExpect(jsonPath("$.splits[1].amount")
                         .value(120000.00))
                 .andExpect(jsonPath("$.createdAt")
                         .value("2026-09-16T10:00:00Z"));
 
-        verify(expenseService).createExpense(
-                eq(groupId),
-                eq(paidBy),
-                eq(expenseAmount),
-                eq(ExpenseCategory.FOOD),
-                eq(SplitType.PERCENTAGE),
-                isNull(),
-                isNull(),
-                eq(percentageSplits)
-        );
+        verify(expenseService)
+                .createExpense(
+                        eq(groupId),
+                        eq(request)
+                );
     }
 
     @Test
@@ -406,18 +448,22 @@ class ExpenseControllerTest {
                         new BigDecimal("300000.00"),
                         ExpenseCategory.FOOD,
                         SplitType.EQUAL,
-                        List.of(
-                                UUID.randomUUID(),
-                                UUID.randomUUID()
-                        ),
-                        null,
-                        null
+                        new SplitRequest(
+                                List.of(
+                                        UUID.randomUUID(),
+                                        UUID.randomUUID()
+                                ),
+                                null,
+                                null
+                        )
                 );
 
         mockMvc.perform(
                         post("/api/groups/{groupId}/expenses", groupId)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request))
+                                .content(
+                                        objectMapper.writeValueAsString(request)
+                                )
                 )
                 .andExpect(status().isBadRequest());
 
@@ -435,18 +481,22 @@ class ExpenseControllerTest {
                         null,
                         ExpenseCategory.FOOD,
                         SplitType.EQUAL,
-                        List.of(
-                                UUID.randomUUID(),
-                                UUID.randomUUID()
-                        ),
-                        null,
-                        null
+                        new SplitRequest(
+                                List.of(
+                                        UUID.randomUUID(),
+                                        UUID.randomUUID()
+                                ),
+                                null,
+                                null
+                        )
                 );
 
         mockMvc.perform(
                         post("/api/groups/{groupId}/expenses", groupId)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request))
+                                .content(
+                                        objectMapper.writeValueAsString(request)
+                                )
                 )
                 .andExpect(status().isBadRequest());
 
@@ -464,18 +514,22 @@ class ExpenseControllerTest {
                         BigDecimal.ZERO,
                         ExpenseCategory.FOOD,
                         SplitType.EQUAL,
-                        List.of(
-                                UUID.randomUUID(),
-                                UUID.randomUUID()
-                        ),
-                        null,
-                        null
+                        new SplitRequest(
+                                List.of(
+                                        UUID.randomUUID(),
+                                        UUID.randomUUID()
+                                ),
+                                null,
+                                null
+                        )
                 );
 
         mockMvc.perform(
                         post("/api/groups/{groupId}/expenses", groupId)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request))
+                                .content(
+                                        objectMapper.writeValueAsString(request)
+                                )
                 )
                 .andExpect(status().isBadRequest());
 
@@ -493,18 +547,22 @@ class ExpenseControllerTest {
                         new BigDecimal("300000.00"),
                         null,
                         SplitType.EQUAL,
-                        List.of(
-                                UUID.randomUUID(),
-                                UUID.randomUUID()
-                        ),
-                        null,
-                        null
+                        new SplitRequest(
+                                List.of(
+                                        UUID.randomUUID(),
+                                        UUID.randomUUID()
+                                ),
+                                null,
+                                null
+                        )
                 );
 
         mockMvc.perform(
                         post("/api/groups/{groupId}/expenses", groupId)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request))
+                                .content(
+                                        objectMapper.writeValueAsString(request)
+                                )
                 )
                 .andExpect(status().isBadRequest());
 
@@ -522,18 +580,22 @@ class ExpenseControllerTest {
                         new BigDecimal("300000.00"),
                         ExpenseCategory.FOOD,
                         null,
-                        List.of(
-                                UUID.randomUUID(),
-                                UUID.randomUUID()
-                        ),
-                        null,
-                        null
+                        new SplitRequest(
+                                List.of(
+                                        UUID.randomUUID(),
+                                        UUID.randomUUID()
+                                ),
+                                null,
+                                null
+                        )
                 );
 
         mockMvc.perform(
                         post("/api/groups/{groupId}/expenses", groupId)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request))
+                                .content(
+                                        objectMapper.writeValueAsString(request)
+                                )
                 )
                 .andExpect(status().isBadRequest());
 
