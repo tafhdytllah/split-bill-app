@@ -80,9 +80,7 @@ public class BillGroup {
         Guard.requireNotNull(createdAt, "created at");
 
         if (participants.size() < 2) {
-            throw new DomainException(
-                    "group must have at least 2 participants"
-            );
+            throw new DomainException("group must have at least 2 participants");
         }
 
         long uniqueIdCount = participants.stream()
@@ -91,9 +89,7 @@ public class BillGroup {
                 .count();
 
         if (uniqueIdCount != participants.size()) {
-            throw new DomainException(
-                    "participant ids must be unique"
-            );
+            throw new DomainException("participant ids must be unique");
         }
 
         long uniqueNameCount = participants.stream()
@@ -102,9 +98,7 @@ public class BillGroup {
                 .count();
 
         if (uniqueNameCount != participants.size()) {
-            throw new DomainException(
-                    "participant names must be unique"
-            );
+            throw new DomainException("participant names must be unique");
         }
     }
 
@@ -114,17 +108,10 @@ public class BillGroup {
         Guard.requireNotNull(participantId, "participant id");
 
         return participants.stream()
-                .filter(participant ->
-                        participant.getId().equals(participantId)
-                )
+                .filter(participant -> participant.getId().equals(participantId))
                 .findFirst()
-                .orElseThrow(() ->
-                        new DomainException(
-                                "participant does not belong to group"
-                        )
-                );
+                .orElseThrow(() -> new DomainException("participant does not belong to group"));
     }
-
 
     public UUID getId() {
         return id;

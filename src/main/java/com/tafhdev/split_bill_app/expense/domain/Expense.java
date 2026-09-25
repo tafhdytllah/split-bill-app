@@ -122,17 +122,13 @@ public class Expense {
 
     private static void validateAmount(Money amount) {
         if (!amount.isPositive()) {
-            throw new DomainException(
-                    "expense amount must be greater than zero"
-            );
+            throw new DomainException("expense amount must be greater than zero");
         }
     }
 
     private static void validateSplits(List<ExpenseSplit> splits) {
         if (splits.size() < 2) {
-            throw new DomainException(
-                    "expense must have at least two split members"
-            );
+            throw new DomainException("expense must have at least two split members");
         }
 
         long uniqueParticipantCount = splits.stream()

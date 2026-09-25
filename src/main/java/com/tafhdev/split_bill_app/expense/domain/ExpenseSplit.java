@@ -61,10 +61,12 @@ public class ExpenseSplit {
         Guard.requireNotNull(participantId, "participant id");
         Guard.requireNotNull(amount, "amount");
 
+        validateAmount(amount);
+    }
+
+    private static void validateAmount(Money amount) {
         if (amount.isNegative()) {
-            throw new DomainException(
-                    "split amount must not be negative"
-            );
+            throw new DomainException("split amount must not be negative");
         }
     }
 

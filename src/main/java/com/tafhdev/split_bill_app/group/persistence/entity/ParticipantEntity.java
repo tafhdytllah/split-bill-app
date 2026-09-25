@@ -2,6 +2,7 @@ package com.tafhdev.split_bill_app.group.persistence.entity;
 
 import com.tafhdev.split_bill_app.expense.persistence.entity.ExpenseEntity;
 import com.tafhdev.split_bill_app.expense.persistence.entity.ExpenseSplitEntity;
+import com.tafhdev.split_bill_app.payment.persistence.entity.PaymentEntity;
 import jakarta.persistence.*;
 
 import java.time.Instant;
@@ -38,6 +39,18 @@ public class ParticipantEntity {
             fetch = FetchType.LAZY
     )
     private List<ExpenseSplitEntity> expenseSplits = new ArrayList<>();
+
+    @OneToMany(
+            mappedBy = "fromParticipant",
+            fetch = FetchType.LAZY
+    )
+    private List<PaymentEntity> sentPayments = new ArrayList<>();
+
+    @OneToMany(
+            mappedBy = "toParticipant",
+            fetch = FetchType.LAZY
+    )
+    private List<PaymentEntity> receivedPayments = new ArrayList<>();
 
     protected ParticipantEntity() {
     }
@@ -76,5 +89,13 @@ public class ParticipantEntity {
 
     public List<ExpenseSplitEntity> getExpenseSplits() {
         return Collections.unmodifiableList(expenseSplits);
+    }
+
+    public List<PaymentEntity> getSentPayments() {
+        return Collections.unmodifiableList(sentPayments);
+    }
+
+    public List<PaymentEntity> getReceivedPayments() {
+        return Collections.unmodifiableList(receivedPayments);
     }
 }

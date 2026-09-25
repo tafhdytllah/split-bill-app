@@ -17,7 +17,10 @@ CREATE TABLE participants
             REFERENCES groups (id),
 
     CONSTRAINT uq_participant_name_per_group
-        UNIQUE (group_id, name)
+        UNIQUE (group_id, name),
+
+    CONSTRAINT uq_participant_group_id
+        UNIQUE (group_id, id)
 );
 
 CREATE TABLE expenses
@@ -35,8 +38,8 @@ CREATE TABLE expenses
             REFERENCES groups (id),
 
     CONSTRAINT fk_expense_paid_by
-        FOREIGN KEY (paid_by)
-            REFERENCES participants (id),
+        FOREIGN KEY (group_id, paid_by)
+            REFERENCES participants (group_id, id),
 
     CONSTRAINT chk_expense_amount_positive
         CHECK (amount > 0)
@@ -78,12 +81,12 @@ CREATE TABLE payments
             REFERENCES groups (id),
 
     CONSTRAINT fk_payment_from
-        FOREIGN KEY (from_participant_id)
-            REFERENCES participants (id),
+        FOREIGN KEY (group_id, from_participant_id)
+            REFERENCES participants (group_id, id),
 
     CONSTRAINT fk_payment_to
-        FOREIGN KEY (to_participant_id)
-            REFERENCES participants (id),
+        FOREIGN KEY (group_id, to_participant_id)
+            REFERENCES participants (group_id, id),
 
     CONSTRAINT chk_payment_amount_positive
         CHECK (amount > 0),

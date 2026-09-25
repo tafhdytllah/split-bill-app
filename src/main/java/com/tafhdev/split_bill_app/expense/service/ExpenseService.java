@@ -11,8 +11,8 @@ import com.tafhdev.split_bill_app.group.repository.BillGroupRepository;
 import com.tafhdev.split_bill_app.shared.domain.Money;
 import com.tafhdev.split_bill_app.shared.domain.exception.DomainException;
 import com.tafhdev.split_bill_app.shared.infrastructure.generator.IdGenerator;
-import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -47,8 +47,6 @@ public class ExpenseService {
             UUID groupId,
             CreateExpenseRequest request
     ) {
-        UUID expenseId = idGenerator.generate();
-        Instant createdAt = Instant.now(clock);
         Money amount = Money.of(request.amount());
 
         BillGroup billGroup = billGroupRepository.findById(groupId)
@@ -84,14 +82,14 @@ public class ExpenseService {
                 );
 
         Expense expense = Expense.createNew(
-                expenseId,
+                idGenerator.generate(),
                 groupId,
                 payer.getId(),
                 amount,
                 request.category(),
                 request.split().type(),
                 splits,
-                createdAt
+                Instant.now(clock)
         );
 
         Expense savedExpense = expenseRepository.save(expense);
