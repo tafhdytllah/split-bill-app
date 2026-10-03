@@ -117,4 +117,12 @@ public class ExpenseRepositoryImpl implements ExpenseRepository {
         return expenseJpaRepository.findByIdWithSplits(id)
                 .map(expenseMapper::toDomain);
     }
+
+    @Override
+    public List<Expense> findByGroupId(UUID groupId) {
+        return expenseJpaRepository.findByGroup_id(groupId)
+                .stream()
+                .map(expenseMapper::toDomain)
+                .toList();
+    }
 }

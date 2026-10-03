@@ -21,14 +21,16 @@ public final class Money {
         Guard.requireNotNull(amount, "money amount");
 
         if (amount.scale() > SCALE) {
-            throw new DomainException(
-                    "money amount must have at most 2 decimal places"
-            );
+            throw new DomainException("money amount must have at most 2 decimal places");
         }
 
         return new Money(
                 amount.setScale(SCALE, ROUNDING_MODE)
         );
+    }
+
+    public static Money zero() {
+        return of(BigDecimal.ZERO);
     }
 
     public static Money rounded(BigDecimal amount) {
@@ -77,6 +79,16 @@ public final class Money {
                         ROUNDING_MODE
                 )
         );
+    }
+
+    public Money negate() {
+        return rounded(amount.negate());
+    }
+
+    public Money min(Money other) {
+        Guard.requireNotNull(other, "other money");
+
+        return rounded(amount.min(other.amount));
     }
 
     public boolean isPositive() {
