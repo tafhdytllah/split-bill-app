@@ -1,5 +1,9 @@
 package com.tafhdev.split_bill_app.payment.service;
 
+import com.tafhdev.split_bill_app.audit.domain.AuditAction;
+import com.tafhdev.split_bill_app.audit.domain.AuditEntityType;
+import com.tafhdev.split_bill_app.audit.domain.AuditLog;
+import com.tafhdev.split_bill_app.audit.repository.AuditLogRepository;
 import com.tafhdev.split_bill_app.group.domain.BillGroup;
 import com.tafhdev.split_bill_app.group.domain.Participant;
 import com.tafhdev.split_bill_app.group.repository.BillGroupRepository;
@@ -21,17 +25,20 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final BillGroupRepository billGroupRepository;
+    private final AuditLogRepository auditLogRepository;
     private final IdGenerator idGenerator;
     private final Clock clock;
 
     public PaymentService(
             PaymentRepository paymentRepository,
             BillGroupRepository billGroupRepository,
+            AuditLogRepository auditLogRepository,
             IdGenerator idGenerator,
             Clock clock
     ) {
         this.paymentRepository = paymentRepository;
         this.billGroupRepository = billGroupRepository;
+        this.auditLogRepository = auditLogRepository;
         this.idGenerator = idGenerator;
         this.clock = clock;
     }
@@ -56,6 +63,17 @@ public class PaymentService {
         );
 
         Payment savedPayment = paymentRepository.save(payment);
+
+        AuditLog auditLog = AuditLog.createNew(
+                idGenerator.generate(),
+                command.groupId(),
+                AuditAction.CREATED,
+                AuditEntityType.PAYMENT,
+                savedPayment.getId(),
+                Instant.now(clock)
+        );
+
+        auditLogRepository.save(auditLog);
 
         return toResult(
                 savedPayment,

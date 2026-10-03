@@ -1,5 +1,9 @@
 package com.tafhdev.split_bill_app.expense.service;
 
+import com.tafhdev.split_bill_app.audit.domain.AuditAction;
+import com.tafhdev.split_bill_app.audit.domain.AuditEntityType;
+import com.tafhdev.split_bill_app.audit.domain.AuditLog;
+import com.tafhdev.split_bill_app.audit.repository.AuditLogRepository;
 import com.tafhdev.split_bill_app.expense.controller.dto.request.CreateExpenseRequest;
 import com.tafhdev.split_bill_app.expense.domain.*;
 import com.tafhdev.split_bill_app.expense.domain.calculator.SplitCalculator;
@@ -24,6 +28,7 @@ public class ExpenseService {
 
     private final ExpenseRepository expenseRepository;
     private final BillGroupRepository billGroupRepository;
+    private final AuditLogRepository auditLogRepository;
     private final SplitCalculatorResolver splitCalculatorResolver;
     private final IdGenerator idGenerator;
     private final Clock clock;
@@ -31,12 +36,14 @@ public class ExpenseService {
     public ExpenseService(
             ExpenseRepository expenseRepository,
             BillGroupRepository billGroupRepository,
+            AuditLogRepository auditLogRepository,
             SplitCalculatorResolver splitCalculatorResolver,
             IdGenerator idGenerator,
             Clock clock
     ) {
         this.expenseRepository = expenseRepository;
         this.billGroupRepository = billGroupRepository;
+        this.auditLogRepository = auditLogRepository;
         this.splitCalculatorResolver = splitCalculatorResolver;
         this.idGenerator = idGenerator;
         this.clock = clock;
@@ -93,6 +100,17 @@ public class ExpenseService {
         );
 
         Expense savedExpense = expenseRepository.save(expense);
+
+        AuditLog auditLog = AuditLog.createNew(
+                idGenerator.generate(),
+                groupId,
+                AuditAction.CREATED,
+                AuditEntityType.EXPENSE,
+                savedExpense.getId(),
+                Instant.now(clock)
+        );
+
+        auditLogRepository.save(auditLog);
 
         return new CreateExpenseResult(
                 savedExpense,

@@ -1,5 +1,6 @@
 package com.tafhdev.split_bill_app.expense.service;
 
+import com.tafhdev.split_bill_app.audit.repository.AuditLogRepository;
 import com.tafhdev.split_bill_app.expense.controller.dto.request.CreateExpenseRequest;
 import com.tafhdev.split_bill_app.expense.controller.dto.request.SplitParticipantRequest;
 import com.tafhdev.split_bill_app.expense.controller.dto.request.SplitRequest;
@@ -33,6 +34,9 @@ class ExpenseServiceTest {
     private final BillGroupRepository billGroupRepository =
             mock(BillGroupRepository.class);
 
+    private final AuditLogRepository auditLogRepository =
+            mock(AuditLogRepository.class);
+
     private final SplitCalculatorResolver splitCalculatorResolver =
             mock(SplitCalculatorResolver.class);
 
@@ -49,6 +53,7 @@ class ExpenseServiceTest {
             new ExpenseService(
                     expenseRepository,
                     billGroupRepository,
+                    auditLogRepository,
                     splitCalculatorResolver,
                     idGenerator,
                     clock
