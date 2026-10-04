@@ -1,9 +1,7 @@
 package com.tafhdev.split_bill_app.shared.persistence.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.tafhdev.split_bill_app.shared.domain.IdempotencyScope;
+import jakarta.persistence.*;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -15,8 +13,9 @@ public class IdempotencyEntity {
     @Id
     private UUID id;
 
+    @Enumerated(EnumType.STRING)
     @Column(length = 100, nullable = false)
-    private String scope;
+    private IdempotencyScope scope;
 
     @Column(name = "idempotency_key", length = 255, nullable = false)
     private String idempotencyKey;
@@ -38,7 +37,7 @@ public class IdempotencyEntity {
 
     public IdempotencyEntity(
             UUID id,
-            String scope,
+            IdempotencyScope scope,
             String idempotencyKey,
             String requestHash,
             Integer responseCode,
@@ -58,7 +57,7 @@ public class IdempotencyEntity {
         return id;
     }
 
-    public String getScope() {
+    public IdempotencyScope getScope() {
         return scope;
     }
 

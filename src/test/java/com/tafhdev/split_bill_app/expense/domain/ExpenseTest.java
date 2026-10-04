@@ -44,7 +44,7 @@ class ExpenseTest {
                 PAID_BY,
                 amount,
                 ExpenseCategory.FOOD,
-                SplitType.EQUAL,
+                ExpenseSplitType.EQUAL,
                 List.of(split1, split2),
                 CREATED_AT
         );
@@ -65,7 +65,7 @@ class ExpenseTest {
                 .isEqualTo(ExpenseCategory.FOOD);
 
         assertThat(expense.getSplitType())
-                .isEqualTo(SplitType.EQUAL);
+                .isEqualTo(ExpenseSplitType.EQUAL);
 
         assertThat(expense.getSplits())
                 .containsExactly(split1, split2);
@@ -83,7 +83,7 @@ class ExpenseTest {
                         PAID_BY,
                         Money.of(new BigDecimal("100.00")),
                         ExpenseCategory.FOOD,
-                        SplitType.EQUAL,
+                        ExpenseSplitType.EQUAL,
                         validSplits(),
                         CREATED_AT
                 )
@@ -101,7 +101,7 @@ class ExpenseTest {
                         PAID_BY,
                         Money.of(new BigDecimal("100.00")),
                         ExpenseCategory.FOOD,
-                        SplitType.EQUAL,
+                        ExpenseSplitType.EQUAL,
                         validSplits(),
                         CREATED_AT
                 )
@@ -119,7 +119,7 @@ class ExpenseTest {
                         null,
                         Money.of(new BigDecimal("100.00")),
                         ExpenseCategory.FOOD,
-                        SplitType.EQUAL,
+                        ExpenseSplitType.EQUAL,
                         validSplits(),
                         CREATED_AT
                 )
@@ -137,7 +137,7 @@ class ExpenseTest {
                         PAID_BY,
                         null,
                         ExpenseCategory.FOOD,
-                        SplitType.EQUAL,
+                        ExpenseSplitType.EQUAL,
                         validSplits(),
                         CREATED_AT
                 )
@@ -155,7 +155,7 @@ class ExpenseTest {
                         PAID_BY,
                         Money.of(new BigDecimal("0.00")),
                         ExpenseCategory.FOOD,
-                        SplitType.EQUAL,
+                        ExpenseSplitType.EQUAL,
                         validSplits(),
                         CREATED_AT
                 )
@@ -173,7 +173,7 @@ class ExpenseTest {
                         PAID_BY,
                         Money.of(new BigDecimal("-100.00")),
                         ExpenseCategory.FOOD,
-                        SplitType.EQUAL,
+                        ExpenseSplitType.EQUAL,
                         validSplits(),
                         CREATED_AT
                 )
@@ -191,7 +191,7 @@ class ExpenseTest {
                         PAID_BY,
                         Money.of(new BigDecimal("100.00")),
                         null,
-                        SplitType.EQUAL,
+                        ExpenseSplitType.EQUAL,
                         validSplits(),
                         CREATED_AT
                 )
@@ -227,7 +227,7 @@ class ExpenseTest {
                         PAID_BY,
                         Money.of(new BigDecimal("100.00")),
                         ExpenseCategory.FOOD,
-                        SplitType.EQUAL,
+                        ExpenseSplitType.EQUAL,
                         null,
                         CREATED_AT
                 )
@@ -253,7 +253,7 @@ class ExpenseTest {
                         PAID_BY,
                         Money.of(new BigDecimal("100.00")),
                         ExpenseCategory.FOOD,
-                        SplitType.EQUAL,
+                        ExpenseSplitType.EQUAL,
                         splits,
                         CREATED_AT
                 )
@@ -283,7 +283,7 @@ class ExpenseTest {
                         PAID_BY,
                         Money.of(new BigDecimal("100.00")),
                         ExpenseCategory.FOOD,
-                        SplitType.EQUAL,
+                        ExpenseSplitType.EQUAL,
                         List.of(split1, split2),
                         CREATED_AT
                 )
@@ -301,7 +301,7 @@ class ExpenseTest {
                         PAID_BY,
                         Money.of(new BigDecimal("100.00")),
                         ExpenseCategory.FOOD,
-                        SplitType.EQUAL,
+                        ExpenseSplitType.EQUAL,
                         validSplits(),
                         null
                 )
@@ -318,7 +318,7 @@ class ExpenseTest {
                 PAID_BY,
                 Money.of(new BigDecimal("100.00")),
                 ExpenseCategory.FOOD,
-                SplitType.EQUAL,
+                ExpenseSplitType.EQUAL,
                 validSplits(),
                 CREATED_AT
         );
@@ -339,7 +339,7 @@ class ExpenseTest {
                 PAID_BY,
                 Money.of(new BigDecimal("100.00")),
                 ExpenseCategory.FOOD,
-                SplitType.EQUAL,
+                ExpenseSplitType.EQUAL,
                 splits,
                 CREATED_AT
         );

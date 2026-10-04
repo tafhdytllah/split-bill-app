@@ -8,16 +8,18 @@ import java.util.UUID;
 public class Idempotency {
 
     private final UUID id;
-    private final String scope;
+    private final IdempotencyScope scope;
     private final String idempotencyKey;
     private final String requestHash;
-    private final Integer responseCode;
-    private final String responseBody;
+
+    private Integer responseCode;
+    private String responseBody;
+
     private final Instant createdAt;
 
-    public Idempotency(
+    private Idempotency(
             UUID id,
-            String scope,
+            IdempotencyScope scope,
             String idempotencyKey,
             String requestHash,
             Integer responseCode,
@@ -35,11 +37,9 @@ public class Idempotency {
 
     public static Idempotency createNew(
             UUID id,
-            String scope,
+            IdempotencyScope scope,
             String idempotencyKey,
             String requestHash,
-            Integer responseCode,
-            String responseBody,
             Instant createdAt
     ) {
         validateInvariants(
@@ -47,8 +47,6 @@ public class Idempotency {
                 scope,
                 idempotencyKey,
                 requestHash,
-                responseCode,
-                responseBody,
                 createdAt
         );
 
@@ -57,15 +55,15 @@ public class Idempotency {
                 scope,
                 idempotencyKey,
                 requestHash,
-                responseCode,
-                responseBody,
+                null,
+                null,
                 createdAt
         );
     }
 
     public static Idempotency reconstitute(
             UUID id,
-            String scope,
+            IdempotencyScope scope,
             String idempotencyKey,
             String requestHash,
             Integer responseCode,
@@ -77,8 +75,6 @@ public class Idempotency {
                 scope,
                 idempotencyKey,
                 requestHash,
-                responseCode,
-                responseBody,
                 createdAt
         );
 
@@ -93,21 +89,28 @@ public class Idempotency {
         );
     }
 
+    public void complete(
+            int responseCode,
+            String responseBody
+    ) {
+        Guard.requireNotNull(responseCode, "response code");
+        Guard.requireNonBlank(responseBody, "response body");
+
+        this.responseCode = responseCode;
+        this.responseBody = responseBody;
+    }
+
     private static void validateInvariants(
             UUID id,
-            String scope,
+            IdempotencyScope scope,
             String idempotencyKey,
             String requestHash,
-            Integer responseCode,
-            String responseBody,
             Instant createdAt
     ) {
         Guard.requireNotNull(id, "id");
-        Guard.requireNonBlank(scope, "scope");
+        Guard.requireNotNull(scope, "scope");
         Guard.requireNonBlank(idempotencyKey, "idempotency key");
         Guard.requireNonBlank(requestHash, "request hash");
-        Guard.requireNotNull(responseCode, "response code");
-        Guard.requireNonBlank(responseBody, "response body");
         Guard.requireNotNull(createdAt, "created at");
     }
 
@@ -115,7 +118,7 @@ public class Idempotency {
         return id;
     }
 
-    public String getScope() {
+    public IdempotencyScope getScope() {
         return scope;
     }
 

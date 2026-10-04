@@ -17,7 +17,7 @@ public class Expense {
     private final UUID paidBy;
     private final Money amount;
     private final ExpenseCategory category;
-    private final SplitType splitType;
+    private final ExpenseSplitType expenseSplitType;
     private final List<ExpenseSplit> splits;
     private final Instant createdAt;
 
@@ -27,7 +27,7 @@ public class Expense {
             UUID paidBy,
             Money amount,
             ExpenseCategory category,
-            SplitType splitType,
+            ExpenseSplitType expenseSplitType,
             List<ExpenseSplit> splits,
             Instant createdAt
     ) {
@@ -36,7 +36,7 @@ public class Expense {
         this.paidBy = paidBy;
         this.amount = amount;
         this.category = category;
-        this.splitType = splitType;
+        this.expenseSplitType = expenseSplitType;
         this.splits = new ArrayList<>(splits);
         this.createdAt = createdAt;
     }
@@ -47,7 +47,7 @@ public class Expense {
             UUID paidBy,
             Money amount,
             ExpenseCategory category,
-            SplitType splitType,
+            ExpenseSplitType expenseSplitType,
             List<ExpenseSplit> splits,
             Instant createdAt
     ) {
@@ -57,7 +57,7 @@ public class Expense {
                 paidBy,
                 amount,
                 category,
-                splitType,
+                expenseSplitType,
                 splits,
                 createdAt
         );
@@ -68,7 +68,7 @@ public class Expense {
                 paidBy,
                 amount,
                 category,
-                splitType,
+                expenseSplitType,
                 splits,
                 createdAt
         );
@@ -80,7 +80,7 @@ public class Expense {
             UUID paidBy,
             Money amount,
             ExpenseCategory category,
-            SplitType splitType,
+            ExpenseSplitType expenseSplitType,
             List<ExpenseSplit> splits,
             Instant createdAt
     ) {
@@ -90,7 +90,7 @@ public class Expense {
                 paidBy,
                 amount,
                 category,
-                splitType,
+                expenseSplitType,
                 splits,
                 createdAt
         );
@@ -102,7 +102,7 @@ public class Expense {
             UUID paidBy,
             Money amount,
             ExpenseCategory category,
-            SplitType splitType,
+            ExpenseSplitType expenseSplitType,
             List<ExpenseSplit> splits,
             Instant createdAt
     ) {
@@ -111,7 +111,7 @@ public class Expense {
         Guard.requireNotNull(paidBy, "paid by");
         Guard.requireNotNull(amount, "amount");
         Guard.requireNotNull(category, "category");
-        Guard.requireNotNull(splitType, "split type");
+        Guard.requireNotNull(expenseSplitType, "split type");
         Guard.requireNotNull(splits, "splits");
         Guard.requireNotNull(createdAt, "created at");
 
@@ -163,8 +163,8 @@ public class Expense {
         return category;
     }
 
-    public SplitType getSplitType() {
-        return splitType;
+    public ExpenseSplitType getSplitType() {
+        return expenseSplitType;
     }
 
     public List<ExpenseSplit> getSplits() {

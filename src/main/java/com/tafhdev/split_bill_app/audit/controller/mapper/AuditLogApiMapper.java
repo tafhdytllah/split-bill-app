@@ -1,10 +1,10 @@
 package com.tafhdev.split_bill_app.audit.controller.mapper;
 
-import com.tafhdev.split_bill_app.audit.controller.dto.response.AuditLogItemResponse;
-import com.tafhdev.split_bill_app.audit.controller.dto.response.AuditLogResponse;
-import com.tafhdev.split_bill_app.audit.service.dto.command.GetAuditLogCommand;
-import com.tafhdev.split_bill_app.audit.service.dto.result.AuditLogItemResult;
-import com.tafhdev.split_bill_app.audit.service.dto.result.AuditLogResult;
+import com.tafhdev.split_bill_app.audit.controller.dto.AuditLogItemResponse;
+import com.tafhdev.split_bill_app.audit.controller.dto.AuditLogResponse;
+import com.tafhdev.split_bill_app.audit.domain.AuditLog;
+import com.tafhdev.split_bill_app.audit.service.dto.GetAuditLogCommand;
+import com.tafhdev.split_bill_app.group.domain.BillGroup;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -17,25 +17,28 @@ public class AuditLogApiMapper {
         return new GetAuditLogCommand(groupId);
     }
 
-    public AuditLogResponse toResponse(AuditLogResult result) {
+    public AuditLogResponse toResponse(
+            BillGroup group,
+            List<AuditLog> auditLogs
+    ) {
 
-        List<AuditLogItemResponse> itemResults = result.auditLogs().stream()
+        List<AuditLogItemResponse> itemResults = auditLogs.stream()
                 .map(this::toItemResponse)
                 .toList();
 
         return new AuditLogResponse(
-                result.groupId(),
+                group.getId(),
                 itemResults
         );
     }
 
-    private AuditLogItemResponse toItemResponse(AuditLogItemResult itemResult) {
+    private AuditLogItemResponse toItemResponse(AuditLog item) {
         return new AuditLogItemResponse(
-                itemResult.id(),
-                itemResult.action(),
-                itemResult.entityType(),
-                itemResult.entityId(),
-                itemResult.createdAt()
+                item.getId(),
+                item.getAction(),
+                item.getEntityType(),
+                item.getEntityId(),
+                item.getCreatedAt()
         );
     }
 }

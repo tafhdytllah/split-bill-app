@@ -3,8 +3,7 @@ package com.tafhdev.split_bill_app.expense.persistence.mapper;
 import com.tafhdev.split_bill_app.expense.domain.Expense;
 import com.tafhdev.split_bill_app.expense.domain.ExpenseCategory;
 import com.tafhdev.split_bill_app.expense.domain.ExpenseSplit;
-import com.tafhdev.split_bill_app.expense.domain.SplitType;
-import com.tafhdev.split_bill_app.expense.persistence.entity.ExpenseSplitEntity;
+import com.tafhdev.split_bill_app.expense.domain.ExpenseSplitType;
 import com.tafhdev.split_bill_app.expense.persistence.entity.ExpenseEntity;
 import com.tafhdev.split_bill_app.group.persistence.entity.BillGroupEntity;
 import com.tafhdev.split_bill_app.group.persistence.entity.ParticipantEntity;
@@ -52,7 +51,7 @@ public class ExpenseMapper {
                 entity.getPaidBy().getId(),
                 Money.of(entity.getAmount()),
                 ExpenseCategory.valueOf(entity.getCategory()),
-                SplitType.valueOf(entity.getSplitType()),
+                ExpenseSplitType.valueOf(entity.getSplitType()),
                 splits,
                 entity.getCreatedAt()
         );

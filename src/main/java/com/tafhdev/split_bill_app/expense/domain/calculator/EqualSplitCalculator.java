@@ -2,7 +2,7 @@ package com.tafhdev.split_bill_app.expense.domain.calculator;
 
 import com.tafhdev.split_bill_app.expense.domain.ExpenseSplit;
 import com.tafhdev.split_bill_app.expense.domain.SplitParticipant;
-import com.tafhdev.split_bill_app.expense.domain.SplitType;
+import com.tafhdev.split_bill_app.expense.domain.ExpenseSplitType;
 import com.tafhdev.split_bill_app.shared.domain.Money;
 import com.tafhdev.split_bill_app.shared.domain.exception.DomainException;
 import com.tafhdev.split_bill_app.shared.domain.exception.Guard;
@@ -24,8 +24,8 @@ public class EqualSplitCalculator implements SplitCalculator {
     }
 
     @Override
-    public SplitType supports() {
-        return SplitType.EQUAL;
+    public ExpenseSplitType supports() {
+        return ExpenseSplitType.EQUAL;
     }
 
     @Override

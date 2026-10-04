@@ -1,10 +1,9 @@
 package com.tafhdev.split_bill_app.audit.controller;
 
-import com.tafhdev.split_bill_app.audit.controller.dto.response.AuditLogResponse;
+import com.tafhdev.split_bill_app.audit.controller.dto.AuditLogResponse;
 import com.tafhdev.split_bill_app.audit.controller.mapper.AuditLogApiMapper;
 import com.tafhdev.split_bill_app.audit.service.AuditLogService;
-import com.tafhdev.split_bill_app.audit.service.dto.command.GetAuditLogCommand;
-import com.tafhdev.split_bill_app.audit.service.dto.result.AuditLogResult;
+import com.tafhdev.split_bill_app.audit.service.dto.GetAuditLogCommand;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,11 +35,11 @@ public class AuditLogController {
 
         GetAuditLogCommand command = auditLogApiMapper.toCommand(groupId);
 
-        AuditLogResult result = auditLogService.getAuditLog(command);
+        AuditLogResponse response = auditLogService.getAuditLog(command);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(auditLogApiMapper.toResponse(result));
+                .body(response);
     }
 
 }

@@ -1,10 +1,10 @@
 package com.tafhdev.split_bill_app.settlement.controller.mapper;
 
-import com.tafhdev.split_bill_app.settlement.controller.dto.response.SettlementItemResponse;
-import com.tafhdev.split_bill_app.settlement.controller.dto.response.SettlementResponse;
-import com.tafhdev.split_bill_app.settlement.service.dto.command.GetSettlementCommand;
-import com.tafhdev.split_bill_app.settlement.service.dto.result.SettlementItemResult;
-import com.tafhdev.split_bill_app.settlement.service.dto.result.SettlementResult;
+import com.tafhdev.split_bill_app.group.domain.BillGroup;
+import com.tafhdev.split_bill_app.settlement.controller.dto.SettlementItemResponse;
+import com.tafhdev.split_bill_app.settlement.controller.dto.SettlementResponse;
+import com.tafhdev.split_bill_app.settlement.domain.Settlement;
+import com.tafhdev.split_bill_app.settlement.service.dto.GetSettlementCommand;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -17,23 +17,26 @@ public class SettlementApiMapper {
         return new GetSettlementCommand(groupId);
     }
 
-    public SettlementResponse toResponse(SettlementResult result) {
+    public SettlementResponse toResponse(
+            BillGroup group,
+            List<Settlement> settlements
+    ) {
 
-        List<SettlementItemResponse> settlements = result.settlements().stream()
+        List<SettlementItemResponse> items = settlements.stream()
                 .map(this::toItemResponse)
                 .toList();
 
         return new SettlementResponse(
-                result.groupId(),
-                settlements
+                group.getId(),
+                items
         );
     }
 
-    private SettlementItemResponse toItemResponse(SettlementItemResult result) {
+    private SettlementItemResponse toItemResponse(Settlement item) {
         return new SettlementItemResponse(
-                result.fromParticipantId(),
-                result.toParticipantId(),
-                result.amount()
+                item.getFromParticipantId(),
+                item.getToParticipantId(),
+                item.getAmount().value()
         );
     }
 }

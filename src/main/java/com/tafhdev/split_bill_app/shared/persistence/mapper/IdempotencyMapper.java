@@ -7,18 +7,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class IdempotencyMapper {
 
-    public Idempotency toDomain(IdempotencyEntity entity) {
-        return Idempotency.reconstitute(
-                entity.getId(),
-                entity.getScope(),
-                entity.getIdempotencyKey(),
-                entity.getRequestHash(),
-                entity.getResponseCode(),
-                entity.getResponseBody(),
-                entity.getCreatedAt()
-        );
-    }
-
     public IdempotencyEntity toEntity(Idempotency domain) {
         return new IdempotencyEntity(
                 domain.getId(),
@@ -28,6 +16,18 @@ public class IdempotencyMapper {
                 domain.getResponseCode(),
                 domain.getResponseBody(),
                 domain.getCreatedAt()
+        );
+    }
+
+    public Idempotency toDomain(IdempotencyEntity entity) {
+        return Idempotency.reconstitute(
+                entity.getId(),
+                entity.getScope(),
+                entity.getIdempotencyKey(),
+                entity.getRequestHash(),
+                entity.getResponseCode(),
+                entity.getResponseBody(),
+                entity.getCreatedAt()
         );
     }
 }

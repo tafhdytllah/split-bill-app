@@ -7,18 +7,27 @@ import com.tafhdev.split_bill_app.audit.repository.AuditLogRepository;
 import com.tafhdev.split_bill_app.group.domain.BillGroup;
 import com.tafhdev.split_bill_app.group.domain.Participant;
 import com.tafhdev.split_bill_app.group.repository.BillGroupRepository;
+import com.tafhdev.split_bill_app.payment.controller.dto.PaymentResponse;
+import com.tafhdev.split_bill_app.payment.controller.mapper.PaymentApiMapper;
 import com.tafhdev.split_bill_app.payment.domain.Payment;
 import com.tafhdev.split_bill_app.payment.repository.PaymentRepository;
-import com.tafhdev.split_bill_app.payment.service.dto.command.CreatePaymentCommand;
-import com.tafhdev.split_bill_app.payment.service.dto.result.ParticipantResult;
-import com.tafhdev.split_bill_app.payment.service.dto.result.PaymentResult;
+import com.tafhdev.split_bill_app.payment.service.dto.CreatePaymentCommand;
+import com.tafhdev.split_bill_app.shared.application.service.IdempotencyHashGenerator;
+import com.tafhdev.split_bill_app.shared.application.service.IdempotencyRequestBuilder;
+import com.tafhdev.split_bill_app.shared.application.service.IdempotencyService;
+import com.tafhdev.split_bill_app.shared.domain.Idempotency;
+import com.tafhdev.split_bill_app.shared.domain.IdempotencyScope;
 import com.tafhdev.split_bill_app.shared.domain.exception.DomainException;
 import com.tafhdev.split_bill_app.shared.infrastructure.generator.IdGenerator;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Optional;
 
 @Service
 public class PaymentService {
@@ -26,25 +35,69 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final BillGroupRepository billGroupRepository;
     private final AuditLogRepository auditLogRepository;
+    private final IdempotencyHashGenerator idempotencyHashGenerator;
+    private final IdempotencyService idempotencyService;
     private final IdGenerator idGenerator;
     private final Clock clock;
+    private final PaymentApiMapper paymentApiMapper;
 
     public PaymentService(
             PaymentRepository paymentRepository,
             BillGroupRepository billGroupRepository,
             AuditLogRepository auditLogRepository,
+            IdempotencyHashGenerator idempotencyHashGenerator,
+            IdempotencyService idempotencyService,
             IdGenerator idGenerator,
-            Clock clock
+            Clock clock,
+            PaymentApiMapper paymentApiMapper
     ) {
         this.paymentRepository = paymentRepository;
         this.billGroupRepository = billGroupRepository;
         this.auditLogRepository = auditLogRepository;
+        this.idempotencyHashGenerator = idempotencyHashGenerator;
+        this.idempotencyService = idempotencyService;
         this.idGenerator = idGenerator;
         this.clock = clock;
+        this.paymentApiMapper = paymentApiMapper;
     }
 
     @Transactional
-    public PaymentResult createPayment(CreatePaymentCommand command) {
+    public PaymentResponse createPayment(CreatePaymentCommand command) {
+
+        String request = IdempotencyRequestBuilder.build(
+                command.groupId(),
+                command.fromParticipantId(),
+                command.toParticipantId(),
+                command.amount()
+        );
+
+        String requestHash = idempotencyHashGenerator.generate(request);
+
+        Optional<Idempotency> existing = idempotencyService.find(
+                IdempotencyScope.PAYMENT,
+                command.idempotencyKey()
+        );
+
+        if (existing.isPresent()) {
+
+            Idempotency idempotency = existing.get();
+
+            boolean sameHash = MessageDigest.isEqual(
+                    idempotency.getRequestHash().getBytes(StandardCharsets.UTF_8),
+                    requestHash.getBytes(StandardCharsets.UTF_8)
+            );
+
+            if (!sameHash) {
+                throw new DomainException(
+                        "idempotency key reused with different request"
+                );
+            }
+
+            return idempotencyService.getResponse(
+                    idempotency,
+                    PaymentResponse.class
+            );
+        }
 
         BillGroup group = billGroupRepository.findById(command.groupId())
                 .orElseThrow(() -> new DomainException("group not found"));
@@ -52,6 +105,12 @@ public class PaymentService {
         Participant fromParticipant = group.requireParticipant(command.fromParticipantId());
 
         Participant toParticipant = group.requireParticipant(command.toParticipantId());
+
+        Idempotency idempotency = idempotencyService.create(
+                IdempotencyScope.PAYMENT,
+                command.idempotencyKey(),
+                requestHash
+        );
 
         Payment payment = Payment.createNew(
                 idGenerator.generate(),
@@ -75,31 +134,18 @@ public class PaymentService {
 
         auditLogRepository.save(auditLog);
 
-        return toResult(
+        PaymentResponse response = paymentApiMapper.toResponse(
                 savedPayment,
                 fromParticipant,
                 toParticipant
         );
-    }
 
-    private PaymentResult toResult(
-            Payment payment,
-            Participant fromParticipant,
-            Participant toParticipant
-    ) {
-        return new PaymentResult(
-                payment.getId(),
-                payment.getGroupId(),
-                new ParticipantResult(
-                        fromParticipant.getId(),
-                        fromParticipant.getName()
-                ),
-                new ParticipantResult(
-                        toParticipant.getId(),
-                        toParticipant.getName()
-                ),
-                payment.getAmount().value(),
-                payment.getCreatedAt()
+        idempotencyService.complete(
+                idempotency,
+                HttpStatus.CREATED.value(),
+                response
         );
+
+        return response;
     }
 }

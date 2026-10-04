@@ -3,7 +3,7 @@ package com.tafhdev.split_bill_app.settlement.domain.calculator;
 import com.tafhdev.split_bill_app.expense.domain.Expense;
 import com.tafhdev.split_bill_app.expense.domain.ExpenseCategory;
 import com.tafhdev.split_bill_app.expense.domain.ExpenseSplit;
-import com.tafhdev.split_bill_app.expense.domain.SplitType;
+import com.tafhdev.split_bill_app.expense.domain.ExpenseSplitType;
 import com.tafhdev.split_bill_app.group.domain.Participant;
 import com.tafhdev.split_bill_app.payment.domain.Payment;
 import com.tafhdev.split_bill_app.settlement.domain.Balance;
@@ -401,7 +401,7 @@ class BalanceCalculatorTest {
                 paidBy,
                 Money.of(new BigDecimal(amount)),
                 ExpenseCategory.FOOD,
-                SplitType.EXACT,
+                ExpenseSplitType.EXACT,
                 List.of(splits),
                 CREATED_AT
         );

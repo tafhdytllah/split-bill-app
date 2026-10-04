@@ -1,10 +1,11 @@
 package com.tafhdev.split_bill_app.payment.controller.mapper;
 
-import com.tafhdev.split_bill_app.payment.controller.dto.request.CreatePaymentRequest;
-import com.tafhdev.split_bill_app.payment.controller.dto.response.ParticipantResponse;
-import com.tafhdev.split_bill_app.payment.controller.dto.response.PaymentResponse;
-import com.tafhdev.split_bill_app.payment.service.dto.command.CreatePaymentCommand;
-import com.tafhdev.split_bill_app.payment.service.dto.result.PaymentResult;
+import com.tafhdev.split_bill_app.group.domain.Participant;
+import com.tafhdev.split_bill_app.payment.controller.dto.CreatePaymentRequest;
+import com.tafhdev.split_bill_app.payment.controller.dto.ParticipantResponse;
+import com.tafhdev.split_bill_app.payment.controller.dto.PaymentResponse;
+import com.tafhdev.split_bill_app.payment.domain.Payment;
+import com.tafhdev.split_bill_app.payment.service.dto.CreatePaymentCommand;
 import com.tafhdev.split_bill_app.shared.domain.Money;
 import org.springframework.stereotype.Component;
 
@@ -14,10 +15,12 @@ import java.util.UUID;
 public class PaymentApiMapper {
 
     public CreatePaymentCommand toCommand(
+            String idempotencyKey,
             UUID groupId,
             CreatePaymentRequest request
     ) {
         return new CreatePaymentCommand(
+                idempotencyKey,
                 groupId,
                 request.fromParticipantId(),
                 request.toParticipantId(),
@@ -25,20 +28,24 @@ public class PaymentApiMapper {
         );
     }
 
-    public PaymentResponse toResponse(PaymentResult result) {
+    public PaymentResponse toResponse(
+            Payment payment,
+            Participant fromParticipant,
+            Participant toParticipant
+    ) {
         return new PaymentResponse(
-                result.id(),
-                result.groupId(),
+                payment.getId(),
+                payment.getGroupId(),
                 new ParticipantResponse(
-                        result.fromParticipant().id(),
-                        result.fromParticipant().name()
+                        fromParticipant.getId(),
+                        fromParticipant.getName()
                 ),
                 new ParticipantResponse(
-                        result.toParticipant().id(),
-                        result.toParticipant().name()
+                        toParticipant.getId(),
+                        toParticipant.getName()
                 ),
-                result.amount(),
-                result.createdAt()
+                payment.getAmount().value(),
+                payment.getCreatedAt()
         );
     }
 }

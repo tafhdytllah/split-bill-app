@@ -1,12 +1,11 @@
 package com.tafhdev.split_bill_app.payment.controller;
 
 
-import com.tafhdev.split_bill_app.payment.controller.dto.request.CreatePaymentRequest;
-import com.tafhdev.split_bill_app.payment.controller.dto.response.PaymentResponse;
+import com.tafhdev.split_bill_app.payment.controller.dto.CreatePaymentRequest;
+import com.tafhdev.split_bill_app.payment.controller.dto.PaymentResponse;
 import com.tafhdev.split_bill_app.payment.controller.mapper.PaymentApiMapper;
 import com.tafhdev.split_bill_app.payment.service.PaymentService;
-import com.tafhdev.split_bill_app.payment.service.dto.command.CreatePaymentCommand;
-import com.tafhdev.split_bill_app.payment.service.dto.result.PaymentResult;
+import com.tafhdev.split_bill_app.payment.service.dto.CreatePaymentCommand;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,17 +31,19 @@ public class PaymentController {
     @PostMapping
     public ResponseEntity<PaymentResponse> createPayment(
             @PathVariable UUID groupId,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
             @Valid @RequestBody CreatePaymentRequest request
     ) {
         CreatePaymentCommand command = paymentApiMapper.toCommand(
+                idempotencyKey,
                 groupId,
                 request
         );
 
-        PaymentResult result = paymentService.createPayment(command);
+        PaymentResponse response = paymentService.createPayment(command);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(paymentApiMapper.toResponse(result));
+                .body(response);
     }
 }

@@ -1,10 +1,10 @@
 package com.tafhdev.split_bill_app.expense.controller;
 
-import com.tafhdev.split_bill_app.expense.controller.dto.request.CreateExpenseRequest;
-import com.tafhdev.split_bill_app.expense.controller.dto.response.ExpenseResponse;
-import com.tafhdev.split_bill_app.expense.controller.mapper.ExpenseResponseMapper;
+import com.tafhdev.split_bill_app.expense.controller.dto.CreateExpenseRequest;
+import com.tafhdev.split_bill_app.expense.controller.dto.ExpenseResponse;
+import com.tafhdev.split_bill_app.expense.controller.mapper.ExpenseApiMapper;
 import com.tafhdev.split_bill_app.expense.service.ExpenseService;
-import com.tafhdev.split_bill_app.expense.service.dto.CreateExpenseResult;
+import com.tafhdev.split_bill_app.expense.service.dto.CreateExpenseCommand;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,33 +17,33 @@ import java.util.UUID;
 public class ExpenseController {
 
     private final ExpenseService expenseService;
-    private final ExpenseResponseMapper expenseResponseMapper;
+    private final ExpenseApiMapper expenseApiMapper;
 
     public ExpenseController(
             ExpenseService expenseService,
-            ExpenseResponseMapper expenseResponseMapper
+            ExpenseApiMapper expenseApiMapper
     ) {
         this.expenseService = expenseService;
-        this.expenseResponseMapper = expenseResponseMapper;
+        this.expenseApiMapper = expenseApiMapper;
     }
 
     @PostMapping
     public ResponseEntity<ExpenseResponse> createExpense(
             @PathVariable UUID groupId,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
             @Valid @RequestBody CreateExpenseRequest request
     ) {
-        CreateExpenseResult result = expenseService.createExpense(
+
+        CreateExpenseCommand command = expenseApiMapper.toCommand(
+                idempotencyKey,
                 groupId,
                 request
         );
 
-        ExpenseResponse expenseResponse = expenseResponseMapper.toResponse(
-                result.expense(),
-                result.participants()
-        );
+        ExpenseResponse response = expenseService.createExpense(command);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(expenseResponse);
+                .body(response);
     }
 }
