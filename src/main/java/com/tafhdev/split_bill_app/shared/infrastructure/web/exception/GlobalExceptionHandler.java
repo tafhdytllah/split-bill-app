@@ -10,10 +10,12 @@ import com.tafhdev.split_bill_app.shared.infrastructure.logger.LogHelper;
 import com.tafhdev.split_bill_app.shared.infrastructure.web.response.ApiResponse;
 import com.tafhdev.split_bill_app.shared.infrastructure.web.response.ErrorCode;
 import com.tafhdev.split_bill_app.shared.infrastructure.web.response.ResponseHelper;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -146,6 +148,51 @@ public class GlobalExceptionHandler {
                 HttpStatus.CONFLICT,
                 ErrorCode.CONFLICT,
                 exception.getMessage()
+        );
+    }
+
+    // 400 : MISSING_REQUEST_HEADER
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<ApiResponse<Object>> handleMissingRequestHeader(
+            MissingRequestHeaderException ex
+    ) {
+        LogHelper.warn(
+                "MISSING_REQUEST_HEADER : {}",
+                ex.getHeaderName()
+        );
+
+        return ResponseHelper.error(
+                HttpStatus.BAD_REQUEST,
+                ErrorCode.BAD_REQUEST,
+                "Missing required header: " + ex.getHeaderName()
+        );
+    }
+
+    // 400 : VALIDATION_ERROR
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Object>> handleConstraintViolation(
+            ConstraintViolationException ex
+    ) {
+        Map<String, String> details = new HashMap<>();
+
+        ex.getConstraintViolations()
+                .forEach(violation ->
+                        details.put(
+                                violation.getPropertyPath().toString(),
+                                violation.getMessage()
+                        )
+                );
+
+        LogHelper.warn(
+                "VALIDATION_ERROR : {}",
+                details
+        );
+
+        return ResponseHelper.error(
+                HttpStatus.BAD_REQUEST,
+                ErrorCode.VALIDATION_ERROR,
+                "Validation failed",
+                details
         );
     }
 

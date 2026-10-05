@@ -10,15 +10,17 @@ import com.tafhdev.split_bill_app.expense.domain.*;
 import com.tafhdev.split_bill_app.expense.domain.calculator.SplitCalculator;
 import com.tafhdev.split_bill_app.expense.repository.ExpenseRepository;
 import com.tafhdev.split_bill_app.expense.service.dto.CreateExpenseCommand;
+import com.tafhdev.split_bill_app.expense.service.dto.ExpenseResult;
 import com.tafhdev.split_bill_app.group.domain.BillGroup;
 import com.tafhdev.split_bill_app.group.domain.Participant;
 import com.tafhdev.split_bill_app.group.repository.BillGroupRepository;
+import com.tafhdev.split_bill_app.shared.application.exception.ConflictException;
+import com.tafhdev.split_bill_app.shared.application.exception.ResourceNotFoundException;
 import com.tafhdev.split_bill_app.shared.application.service.IdempotencyHashGenerator;
 import com.tafhdev.split_bill_app.shared.application.service.IdempotencyRequestBuilder;
 import com.tafhdev.split_bill_app.shared.application.service.IdempotencyService;
 import com.tafhdev.split_bill_app.shared.domain.Idempotency;
 import com.tafhdev.split_bill_app.shared.domain.IdempotencyScope;
-import com.tafhdev.split_bill_app.shared.domain.exception.DomainException;
 import com.tafhdev.split_bill_app.shared.infrastructure.generator.IdGenerator;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -67,7 +69,7 @@ public class ExpenseService {
     }
 
     @Transactional
-    public ExpenseResponse createExpense(CreateExpenseCommand command) {
+    public ExpenseResult createExpense(CreateExpenseCommand command) {
 
         StringBuilder request = new StringBuilder(
                 IdempotencyRequestBuilder.build(
@@ -108,19 +110,24 @@ public class ExpenseService {
             );
 
             if (!sameHash) {
-                throw new DomainException(
+                throw new ConflictException(
                         "idempotency key reused with different request"
                 );
             }
 
-            return idempotencyService.getResponse(
+            ExpenseResponse response = idempotencyService.getResponse(
                     idempotency,
                     ExpenseResponse.class
+            );
+
+            return new ExpenseResult(
+                    response,
+                    true
             );
         }
 
         BillGroup billGroup = billGroupRepository.findById(command.groupId())
-                .orElseThrow(() -> new DomainException("bill group not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("bill group not found"));
 
         Participant payer = billGroup.requireParticipant(command.paidByParticipantId());
 
@@ -193,6 +200,9 @@ public class ExpenseService {
                 response
         );
 
-        return response;
+        return new ExpenseResult(
+                response,
+                false
+        );
     }
 }

@@ -13,7 +13,7 @@ import com.tafhdev.split_bill_app.settlement.domain.Settlement;
 import com.tafhdev.split_bill_app.settlement.domain.calculator.BalanceCalculator;
 import com.tafhdev.split_bill_app.settlement.domain.calculator.SettlementOptimizer;
 import com.tafhdev.split_bill_app.settlement.service.dto.GetSettlementCommand;
-import com.tafhdev.split_bill_app.shared.domain.exception.DomainException;
+import com.tafhdev.split_bill_app.shared.application.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,7 +49,9 @@ public class SettlementService {
     public SettlementResponse getSettlement(GetSettlementCommand command) {
 
         BillGroup group = billGroupRepository.findById(command.groupId())
-                .orElseThrow(() -> new DomainException("group not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("group not found")
+                );
 
         List<Expense> expenses = expenseRepository.findByGroupId(command.groupId());
 

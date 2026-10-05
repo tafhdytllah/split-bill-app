@@ -9,7 +9,8 @@ import java.util.UUID;
 
 public record SplitParticipantRequest(
 
-        @NotNull UUID participantId,
+        @NotNull
+        UUID participantId,
 
         @DecimalMin(value = "0.01")
         BigDecimal amount,

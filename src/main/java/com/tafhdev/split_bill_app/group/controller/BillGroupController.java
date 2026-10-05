@@ -4,12 +4,16 @@ import com.tafhdev.split_bill_app.group.controller.dto.BillGroupResponse;
 import com.tafhdev.split_bill_app.group.controller.dto.CreateBillGroupRequest;
 import com.tafhdev.split_bill_app.group.controller.mapper.BillGroupApiMapper;
 import com.tafhdev.split_bill_app.group.service.BillGroupService;
+import com.tafhdev.split_bill_app.group.service.dto.BillGroupResult;
 import com.tafhdev.split_bill_app.group.service.dto.CreateBillGroupCommand;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+@Validated
 @RestController
 @RequestMapping("/api/groups")
 public class BillGroupController {
@@ -27,8 +31,13 @@ public class BillGroupController {
 
     @PostMapping
     public ResponseEntity<BillGroupResponse> createGroup(
-            @RequestHeader("Idempotency-Key") String idempotencyKey,
-            @Valid @RequestBody CreateBillGroupRequest request
+            @RequestHeader("Idempotency-Key")
+            @NotBlank(message = "Idempotency-Key must not be blank")
+            String idempotencyKey,
+
+            @Valid
+            @RequestBody
+            CreateBillGroupRequest request
     ) {
 
         CreateBillGroupCommand command = billGroupApiMapper.toCommand(
@@ -36,10 +45,10 @@ public class BillGroupController {
                 request
         );
 
-        BillGroupResponse response = billGroupService.createGroup(command);
+        BillGroupResult result = billGroupService.createGroup(command);
 
         return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(response);
+                .status(result.replay() ? HttpStatus.OK : HttpStatus.CREATED)
+                .body(result.response());
     }
 }

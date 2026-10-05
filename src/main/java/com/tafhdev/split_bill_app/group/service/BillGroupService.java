@@ -5,18 +5,18 @@ import com.tafhdev.split_bill_app.group.controller.mapper.BillGroupApiMapper;
 import com.tafhdev.split_bill_app.group.domain.BillGroup;
 import com.tafhdev.split_bill_app.group.domain.Participant;
 import com.tafhdev.split_bill_app.group.repository.BillGroupRepository;
+import com.tafhdev.split_bill_app.group.service.dto.BillGroupResult;
 import com.tafhdev.split_bill_app.group.service.dto.CreateBillGroupCommand;
+import com.tafhdev.split_bill_app.shared.application.exception.ConflictException;
 import com.tafhdev.split_bill_app.shared.application.service.IdempotencyHashGenerator;
 import com.tafhdev.split_bill_app.shared.application.service.IdempotencyRequestBuilder;
 import com.tafhdev.split_bill_app.shared.application.service.IdempotencyService;
 import com.tafhdev.split_bill_app.shared.domain.Idempotency;
 import com.tafhdev.split_bill_app.shared.domain.IdempotencyScope;
-import com.tafhdev.split_bill_app.shared.domain.exception.DomainException;
 import com.tafhdev.split_bill_app.shared.infrastructure.generator.IdGenerator;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -32,7 +32,6 @@ public class BillGroupService {
     private final BillGroupRepository billGroupRepository;
     private final IdempotencyHashGenerator idempotencyHashGenerator;
     private final IdempotencyService idempotencyService;
-    private final ObjectMapper objectMapper;
     private final IdGenerator idGenerator;
     private final Clock clock;
     private final BillGroupApiMapper billGroupApiMapper;
@@ -41,7 +40,6 @@ public class BillGroupService {
             BillGroupRepository billGroupRepository,
             IdempotencyHashGenerator idempotencyHashGenerator,
             IdempotencyService idempotencyService,
-            ObjectMapper objectMapper,
             IdGenerator idGenerator,
             Clock clock,
             BillGroupApiMapper billGroupApiMapper
@@ -49,14 +47,13 @@ public class BillGroupService {
         this.billGroupRepository = billGroupRepository;
         this.idempotencyHashGenerator = idempotencyHashGenerator;
         this.idempotencyService = idempotencyService;
-        this.objectMapper = objectMapper;
         this.idGenerator = idGenerator;
         this.clock = clock;
         this.billGroupApiMapper = billGroupApiMapper;
     }
 
     @Transactional
-    public BillGroupResponse createGroup(CreateBillGroupCommand command) {
+    public BillGroupResult createGroup(CreateBillGroupCommand command) {
 
         String request = IdempotencyRequestBuilder.build(
                 command.name(),
@@ -81,14 +78,19 @@ public class BillGroupService {
             );
 
             if (!sameHash) {
-                throw new DomainException(
+                throw new ConflictException(
                         "idempotency key reused with different request"
                 );
             }
 
-            return idempotencyService.getResponse(
+            BillGroupResponse response = idempotencyService.getResponse(
                     idempotency,
                     BillGroupResponse.class
+            );
+
+            return new BillGroupResult(
+                    response,
+                    true
             );
         }
 
@@ -129,6 +131,9 @@ public class BillGroupService {
                 response
         );
 
-        return response;
+        return new BillGroupResult(
+                response,
+                false
+        );
     }
 }

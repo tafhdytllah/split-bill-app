@@ -11,6 +11,7 @@ import com.tafhdev.split_bill_app.group.persistence.entity.BillGroupEntity;
 import com.tafhdev.split_bill_app.group.persistence.entity.ParticipantEntity;
 import com.tafhdev.split_bill_app.group.persistence.repository.BillGroupJpaRepository;
 import com.tafhdev.split_bill_app.group.persistence.repository.ParticipantJpaRepository;
+import com.tafhdev.split_bill_app.shared.application.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -49,7 +50,9 @@ public class ExpenseRepositoryImpl implements ExpenseRepository {
         BillGroupEntity groupEntity =
                 billGroupJpaRepository.findById(expense.getGroupId())
                         .orElseThrow(() ->
-                                new IllegalStateException("group not found"));
+                                new ResourceNotFoundException(
+                                        "group not found"
+                                ));
 
         ParticipantEntity paidByEntity =
                 participantJpaRepository
@@ -58,7 +61,7 @@ public class ExpenseRepositoryImpl implements ExpenseRepository {
                                 expense.getGroupId()
                         )
                         .orElseThrow(() ->
-                                new IllegalStateException(
+                                new ResourceNotFoundException(
                                         "paid by participant not found"
                                 ));
 
@@ -92,7 +95,7 @@ public class ExpenseRepositoryImpl implements ExpenseRepository {
                     participantMap.get(split.getParticipantId());
 
             if (participantEntity == null) {
-                throw new IllegalStateException(
+                throw new ResourceNotFoundException(
                         "split participant not found"
                 );
             }

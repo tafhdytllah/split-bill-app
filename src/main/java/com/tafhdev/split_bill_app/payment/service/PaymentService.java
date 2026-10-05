@@ -12,12 +12,14 @@ import com.tafhdev.split_bill_app.payment.controller.mapper.PaymentApiMapper;
 import com.tafhdev.split_bill_app.payment.domain.Payment;
 import com.tafhdev.split_bill_app.payment.repository.PaymentRepository;
 import com.tafhdev.split_bill_app.payment.service.dto.CreatePaymentCommand;
+import com.tafhdev.split_bill_app.payment.service.dto.PaymentResult;
+import com.tafhdev.split_bill_app.shared.application.exception.ConflictException;
+import com.tafhdev.split_bill_app.shared.application.exception.ResourceNotFoundException;
 import com.tafhdev.split_bill_app.shared.application.service.IdempotencyHashGenerator;
 import com.tafhdev.split_bill_app.shared.application.service.IdempotencyRequestBuilder;
 import com.tafhdev.split_bill_app.shared.application.service.IdempotencyService;
 import com.tafhdev.split_bill_app.shared.domain.Idempotency;
 import com.tafhdev.split_bill_app.shared.domain.IdempotencyScope;
-import com.tafhdev.split_bill_app.shared.domain.exception.DomainException;
 import com.tafhdev.split_bill_app.shared.infrastructure.generator.IdGenerator;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -62,7 +64,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentResponse createPayment(CreatePaymentCommand command) {
+    public PaymentResult createPayment(CreatePaymentCommand command) {
 
         String request = IdempotencyRequestBuilder.build(
                 command.groupId(),
@@ -88,19 +90,27 @@ public class PaymentService {
             );
 
             if (!sameHash) {
-                throw new DomainException(
+                throw new ConflictException(
                         "idempotency key reused with different request"
                 );
             }
 
-            return idempotencyService.getResponse(
+            PaymentResponse response = idempotencyService.getResponse(
                     idempotency,
                     PaymentResponse.class
+            );
+
+            return new PaymentResult(
+                    response,
+                    true
             );
         }
 
         BillGroup group = billGroupRepository.findById(command.groupId())
-                .orElseThrow(() -> new DomainException("group not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "group not found"
+                        ));
 
         Participant fromParticipant = group.requireParticipant(command.fromParticipantId());
 
@@ -146,6 +156,9 @@ public class PaymentService {
                 response
         );
 
-        return response;
+        return new PaymentResult(
+                response,
+                false
+        );
     }
 }

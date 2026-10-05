@@ -1,14 +1,16 @@
 package com.tafhdev.split_bill_app.group.controller.dto;
 
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 
 import java.util.List;
 
 public record CreateBillGroupRequest(
 
-        @NotNull
+        @NotBlank
         String name,
 
-        List<String> participants
+        @NotEmpty
+        List<@NotBlank String> participants
 ) {
 }

@@ -5,13 +5,17 @@ import com.tafhdev.split_bill_app.expense.controller.dto.ExpenseResponse;
 import com.tafhdev.split_bill_app.expense.controller.mapper.ExpenseApiMapper;
 import com.tafhdev.split_bill_app.expense.service.ExpenseService;
 import com.tafhdev.split_bill_app.expense.service.dto.CreateExpenseCommand;
+import com.tafhdev.split_bill_app.expense.service.dto.ExpenseResult;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
+@Validated
 @RestController
 @RequestMapping("/api/groups/{groupId}/expenses")
 public class ExpenseController {
@@ -29,9 +33,16 @@ public class ExpenseController {
 
     @PostMapping
     public ResponseEntity<ExpenseResponse> createExpense(
-            @PathVariable UUID groupId,
-            @RequestHeader("Idempotency-Key") String idempotencyKey,
-            @Valid @RequestBody CreateExpenseRequest request
+            @PathVariable
+            UUID groupId,
+
+            @RequestHeader("Idempotency-Key")
+            @NotBlank(message = "Idempotency-Key must not be blank")
+            String idempotencyKey,
+
+            @Valid
+            @RequestBody
+            CreateExpenseRequest request
     ) {
 
         CreateExpenseCommand command = expenseApiMapper.toCommand(
@@ -40,10 +51,10 @@ public class ExpenseController {
                 request
         );
 
-        ExpenseResponse response = expenseService.createExpense(command);
+        ExpenseResult result = expenseService.createExpense(command);
 
         return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(response);
+                .status(result.reply() ? HttpStatus.OK : HttpStatus.CREATED)
+                .body(result.response());
     }
 }

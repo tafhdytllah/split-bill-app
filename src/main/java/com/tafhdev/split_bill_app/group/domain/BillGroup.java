@@ -83,17 +83,9 @@ public class BillGroup {
             throw new DomainException("group must have at least 2 participants");
         }
 
-        long uniqueIdCount = participants.stream()
-                .map(Participant::getId)
-                .distinct()
-                .count();
-
-        if (uniqueIdCount != participants.size()) {
-            throw new DomainException("participant ids must be unique");
-        }
-
         long uniqueNameCount = participants.stream()
                 .map(Participant::getName)
+                .map(s -> s.trim().toLowerCase(Locale.ROOT))
                 .distinct()
                 .count();
 
