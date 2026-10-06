@@ -6,6 +6,6 @@ public record BillGroupResult(
 
         BillGroupResponse response,
 
-        boolean replay
+        boolean reply
 ) {
 }
