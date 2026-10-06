@@ -1,6 +1,5 @@
 package com.tafhdev.split_bill_app.payment.controller;
 
-
 import com.tafhdev.split_bill_app.payment.controller.dto.CreatePaymentRequest;
 import com.tafhdev.split_bill_app.payment.controller.dto.PaymentResponse;
 import com.tafhdev.split_bill_app.payment.controller.mapper.PaymentApiMapper;
