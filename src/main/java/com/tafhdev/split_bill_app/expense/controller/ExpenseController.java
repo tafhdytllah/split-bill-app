@@ -6,6 +6,8 @@ import com.tafhdev.split_bill_app.expense.controller.mapper.ExpenseApiMapper;
 import com.tafhdev.split_bill_app.expense.service.ExpenseService;
 import com.tafhdev.split_bill_app.expense.service.dto.CreateExpenseCommand;
 import com.tafhdev.split_bill_app.expense.service.dto.ExpenseResult;
+import com.tafhdev.split_bill_app.shared.infrastructure.web.response.ApiResponse;
+import com.tafhdev.split_bill_app.shared.infrastructure.web.response.ResponseFactory;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
@@ -32,7 +34,7 @@ public class ExpenseController {
     }
 
     @PostMapping
-    public ResponseEntity<ExpenseResponse> createExpense(
+    public ResponseEntity<ApiResponse<ExpenseResponse>> createExpense(
             @PathVariable
             UUID groupId,
 
@@ -53,8 +55,8 @@ public class ExpenseController {
 
         ExpenseResult result = expenseService.createExpense(command);
 
-        return ResponseEntity
-                .status(result.reply() ? HttpStatus.OK : HttpStatus.CREATED)
-                .body(result.response());
+        return result.reply()
+                ? ResponseFactory.ok(result.response())
+                : ResponseFactory.created(result.response());
     }
 }

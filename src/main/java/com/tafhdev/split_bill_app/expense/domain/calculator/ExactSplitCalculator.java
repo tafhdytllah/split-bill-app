@@ -7,12 +7,10 @@ import com.tafhdev.split_bill_app.shared.domain.Money;
 import com.tafhdev.split_bill_app.shared.domain.exception.DomainException;
 import com.tafhdev.split_bill_app.shared.domain.exception.Guard;
 import com.tafhdev.split_bill_app.shared.infrastructure.generator.IdGenerator;
-import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.*;
 
-@Component
 public class ExactSplitCalculator implements SplitCalculator {
 
     private final IdGenerator idGenerator;

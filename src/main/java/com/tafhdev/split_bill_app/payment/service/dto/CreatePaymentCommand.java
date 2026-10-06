@@ -7,9 +7,13 @@ import java.util.UUID;
 public record CreatePaymentCommand(
 
         String idempotencyKey,
+
         UUID groupId,
+
         UUID fromParticipantId,
+
         UUID toParticipantId,
+
         Money amount
 ) {
 }

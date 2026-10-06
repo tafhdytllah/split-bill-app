@@ -4,6 +4,8 @@ import com.tafhdev.split_bill_app.settlement.controller.dto.SettlementResponse;
 import com.tafhdev.split_bill_app.settlement.controller.mapper.SettlementApiMapper;
 import com.tafhdev.split_bill_app.settlement.service.SettlementService;
 import com.tafhdev.split_bill_app.settlement.service.dto.GetSettlementCommand;
+import com.tafhdev.split_bill_app.shared.infrastructure.web.response.ApiResponse;
+import com.tafhdev.split_bill_app.shared.infrastructure.web.response.ResponseFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,15 +31,13 @@ public class SettlementController {
     }
 
     @GetMapping
-    public ResponseEntity<SettlementResponse> getSettlement(
+    public ResponseEntity<ApiResponse<SettlementResponse>> getSettlement(
             @PathVariable UUID groupId
     ) {
         GetSettlementCommand command = settlementApiMapper.toCommand(groupId);
 
         SettlementResponse response = settlementService.getSettlement(command);
 
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(response);
+        return ResponseFactory.ok(response);
     }
 }

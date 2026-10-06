@@ -13,15 +13,20 @@ import java.util.UUID;
 public record ExpenseResponse(
 
         UUID id,
+
         UUID groupId,
+
         UUID paidBy,
 
         @JsonSerialize(using = ToStringSerializer.class)
         BigDecimal amount,
 
         ExpenseCategory category,
+
         ExpenseSplitType expenseSplitType,
+
         List<ExpenseSplitResponse> splits,
+
         Instant createdAt
 ) {
 }

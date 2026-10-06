@@ -5,6 +5,7 @@ import com.tafhdev.split_bill_app.expense.controller.dto.ExpenseResponse;
 public record ExpenseResult(
 
         ExpenseResponse response,
+
         boolean reply
 ) {
 }

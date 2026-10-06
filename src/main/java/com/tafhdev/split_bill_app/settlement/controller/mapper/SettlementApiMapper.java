@@ -1,8 +1,10 @@
 package com.tafhdev.split_bill_app.settlement.controller.mapper;
 
 import com.tafhdev.split_bill_app.group.domain.BillGroup;
+import com.tafhdev.split_bill_app.settlement.controller.dto.BalanceItemResponse;
 import com.tafhdev.split_bill_app.settlement.controller.dto.SettlementItemResponse;
 import com.tafhdev.split_bill_app.settlement.controller.dto.SettlementResponse;
+import com.tafhdev.split_bill_app.settlement.domain.Balance;
 import com.tafhdev.split_bill_app.settlement.domain.Settlement;
 import com.tafhdev.split_bill_app.settlement.service.dto.GetSettlementCommand;
 import org.springframework.stereotype.Component;
@@ -19,20 +21,33 @@ public class SettlementApiMapper {
 
     public SettlementResponse toResponse(
             BillGroup group,
+            List<Balance> balances,
             List<Settlement> settlements
     ) {
 
-        List<SettlementItemResponse> items = settlements.stream()
-                .map(this::toItemResponse)
+        List<BalanceItemResponse> balanceItemResponses = balances.stream()
+                .map(this::toBalanceItemResponse)
+                .toList();
+
+        List<SettlementItemResponse> settlementItemResponses = settlements.stream()
+                .map(this::toSettlementItemResponse)
                 .toList();
 
         return new SettlementResponse(
                 group.getId(),
-                items
+                balanceItemResponses,
+                settlementItemResponses
         );
     }
 
-    private SettlementItemResponse toItemResponse(Settlement item) {
+    private BalanceItemResponse toBalanceItemResponse(Balance item) {
+        return new BalanceItemResponse(
+                item.getParticipantId(),
+                item.getAmount().value()
+        );
+    }
+
+    private SettlementItemResponse toSettlementItemResponse(Settlement item) {
         return new SettlementItemResponse(
                 item.getFromParticipantId(),
                 item.getToParticipantId(),

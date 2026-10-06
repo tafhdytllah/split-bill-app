@@ -5,7 +5,9 @@ import java.util.List;
 public record CreateBillGroupCommand(
 
         String idempotencyKey,
+
         String name,
+
         List<String> participantNames
 ) {
 }

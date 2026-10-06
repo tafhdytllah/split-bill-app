@@ -4,6 +4,8 @@ import com.tafhdev.split_bill_app.audit.controller.dto.AuditLogResponse;
 import com.tafhdev.split_bill_app.audit.controller.mapper.AuditLogApiMapper;
 import com.tafhdev.split_bill_app.audit.service.AuditLogService;
 import com.tafhdev.split_bill_app.audit.service.dto.GetAuditLogCommand;
+import com.tafhdev.split_bill_app.shared.infrastructure.web.response.ApiResponse;
+import com.tafhdev.split_bill_app.shared.infrastructure.web.response.ResponseFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,7 +31,7 @@ public class AuditLogController {
     }
 
     @GetMapping
-    public ResponseEntity<AuditLogResponse> getAuditLog(
+    public ResponseEntity<ApiResponse<AuditLogResponse>> getAuditLog(
             @PathVariable UUID groupId
     ) {
 
@@ -37,9 +39,7 @@ public class AuditLogController {
 
         AuditLogResponse response = auditLogService.getAuditLog(command);
 
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(response);
+        return ResponseFactory.ok(response);
     }
 
 }

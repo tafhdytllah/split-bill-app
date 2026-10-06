@@ -174,8 +174,4 @@ public class Expense {
     public Instant getCreatedAt() {
         return createdAt;
     }
-
-    public Object paidy() {
-        return null;
-    }
 }

@@ -5,6 +5,7 @@ import java.util.UUID;
 public record ParticipantResponse(
 
         UUID id,
+
         String name
 ) {
 }

@@ -7,10 +7,15 @@ import java.util.UUID;
 public record PaymentResponse(
 
         UUID id,
+
         UUID groupId,
+
         ParticipantResponse fromParticipant,
+
         ParticipantResponse toParticipant,
+
         BigDecimal amount,
+
         Instant createdAt
 ) {
 }

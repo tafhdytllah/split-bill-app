@@ -9,9 +9,13 @@ import java.util.UUID;
 public record AuditLogItemResponse(
 
         UUID id,
+
         AuditAction action,
+
         AuditEntityType entityType,
+
         UUID entityId,
+
         Instant createdAt
 ) {
 }

@@ -7,8 +7,11 @@ import java.util.UUID;
 public record BillGroupResponse(
 
         UUID id,
+
         String name,
+
         List<ParticipantResponse> participants,
+
         Instant createdAt
 ) {
 }

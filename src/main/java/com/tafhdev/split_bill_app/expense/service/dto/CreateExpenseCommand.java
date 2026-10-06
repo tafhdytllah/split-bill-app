@@ -8,10 +8,15 @@ import java.util.UUID;
 public record CreateExpenseCommand(
 
         String idempotencyKey,
+
         UUID groupId,
+
         UUID paidByParticipantId,
+
         Money amount,
+
         ExpenseCategory category,
+
         SplitCommand split
 ) {
 }

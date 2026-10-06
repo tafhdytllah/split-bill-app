@@ -5,9 +5,9 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.Map;
 
-public final class ResponseHelper {
+public final class ResponseFactory {
 
-    private ResponseHelper() {
+    private ResponseFactory() {
     }
 
     public static <T> ResponseEntity<ApiResponse<T>> ok(T data) {

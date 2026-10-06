@@ -8,7 +8,9 @@ import java.util.UUID;
 public record SplitParticipantCommand(
 
         UUID participantId,
+
         Money amount,
+
         BigDecimal percentage
 ) {
 }

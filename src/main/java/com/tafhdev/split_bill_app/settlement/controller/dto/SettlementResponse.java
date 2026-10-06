@@ -7,6 +7,8 @@ public record SettlementResponse(
 
         UUID groupId,
 
+        List<BalanceItemResponse> balances,
+
         List<SettlementItemResponse> settlements
 ) {
 }

@@ -6,6 +6,7 @@ import com.tafhdev.split_bill_app.expense.controller.dto.SplitRequest;
 import com.tafhdev.split_bill_app.expense.controller.dto.ExpenseResponse;
 import com.tafhdev.split_bill_app.expense.controller.dto.ExpenseSplitResponse;
 import com.tafhdev.split_bill_app.expense.domain.Expense;
+import com.tafhdev.split_bill_app.expense.domain.ExpenseSplit;
 import com.tafhdev.split_bill_app.expense.service.dto.CreateExpenseCommand;
 import com.tafhdev.split_bill_app.expense.service.dto.SplitCommand;
 import com.tafhdev.split_bill_app.expense.service.dto.SplitParticipantCommand;
@@ -50,7 +51,7 @@ public class ExpenseApiMapper {
         List<ExpenseSplitResponse> splits =
                 expense.getSplits().stream()
                         .map(expenseSplit ->
-                                ExpenseSplitResponse.from(
+                                toSplitResponse(
                                         expenseSplit,
                                         participantNames.get(
                                                 expenseSplit.getParticipantId()
@@ -68,6 +69,18 @@ public class ExpenseApiMapper {
                 expense.getSplitType(),
                 splits,
                 expense.getCreatedAt()
+        );
+    }
+
+    private ExpenseSplitResponse toSplitResponse(
+            ExpenseSplit expenseSplit,
+            String participantName
+    ) {
+        return new ExpenseSplitResponse(
+                expenseSplit.getId(),
+                expenseSplit.getParticipantId(),
+                participantName,
+                expenseSplit.getAmount().value()
         );
     }
 

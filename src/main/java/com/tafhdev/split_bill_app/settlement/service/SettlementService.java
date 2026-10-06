@@ -67,6 +67,7 @@ public class SettlementService {
 
         return settlementApiMapper.toResponse(
                 group,
+                balances,
                 settlements
         );
     }

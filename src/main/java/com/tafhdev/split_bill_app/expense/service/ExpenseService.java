@@ -5,12 +5,14 @@ import com.tafhdev.split_bill_app.audit.domain.AuditEntityType;
 import com.tafhdev.split_bill_app.audit.domain.AuditLog;
 import com.tafhdev.split_bill_app.audit.repository.AuditLogRepository;
 import com.tafhdev.split_bill_app.expense.controller.dto.ExpenseResponse;
+import com.tafhdev.split_bill_app.expense.controller.dto.SplitParticipantRequest;
 import com.tafhdev.split_bill_app.expense.controller.mapper.ExpenseApiMapper;
 import com.tafhdev.split_bill_app.expense.domain.*;
 import com.tafhdev.split_bill_app.expense.domain.calculator.SplitCalculator;
 import com.tafhdev.split_bill_app.expense.repository.ExpenseRepository;
 import com.tafhdev.split_bill_app.expense.service.dto.CreateExpenseCommand;
 import com.tafhdev.split_bill_app.expense.service.dto.ExpenseResult;
+import com.tafhdev.split_bill_app.expense.service.dto.SplitParticipantCommand;
 import com.tafhdev.split_bill_app.group.domain.BillGroup;
 import com.tafhdev.split_bill_app.group.domain.Participant;
 import com.tafhdev.split_bill_app.group.repository.BillGroupRepository;
@@ -30,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -71,6 +74,10 @@ public class ExpenseService {
     @Transactional
     public ExpenseResult createExpense(CreateExpenseCommand command) {
 
+        List<SplitParticipantCommand> sortedParticipants = command.split().participants().stream()
+                .sorted(Comparator.comparing(SplitParticipantCommand::participantId))
+                .toList();
+
         StringBuilder request = new StringBuilder(
                 IdempotencyRequestBuilder.build(
                         command.groupId(),
@@ -81,8 +88,7 @@ public class ExpenseService {
                 )
         );
 
-        command.split().participants()
-                .forEach(participant -> {
+        sortedParticipants.forEach(participant -> {
                     request.append(
                             IdempotencyRequestBuilder.build(
                                     participant.participantId(),

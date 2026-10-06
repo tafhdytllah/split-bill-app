@@ -9,7 +9,7 @@ import com.tafhdev.split_bill_app.shared.domain.exception.DomainException;
 import com.tafhdev.split_bill_app.shared.infrastructure.logger.LogHelper;
 import com.tafhdev.split_bill_app.shared.infrastructure.web.response.ApiResponse;
 import com.tafhdev.split_bill_app.shared.infrastructure.web.response.ErrorCode;
-import com.tafhdev.split_bill_app.shared.infrastructure.web.response.ResponseHelper;
+import com.tafhdev.split_bill_app.shared.infrastructure.web.response.ResponseFactory;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +18,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +33,7 @@ public class GlobalExceptionHandler {
     ) {
         LogHelper.warn("DOMAIN_ERROR : {}", exception.getMessage());
 
-        return ResponseHelper.error(
+        return ResponseFactory.error(
                 HttpStatus.BAD_REQUEST,
                 ErrorCode.DOMAIN_ERROR,
                 exception.getMessage()
@@ -57,7 +58,7 @@ public class GlobalExceptionHandler {
 
         LogHelper.warn("VALIDATION_ERROR : {}", details);
 
-        return ResponseHelper.error(
+        return ResponseFactory.error(
                 HttpStatus.BAD_REQUEST,
                 ErrorCode.VALIDATION_ERROR,
                 "Validation failed",
@@ -78,7 +79,7 @@ public class GlobalExceptionHandler {
 
             if (cause instanceof UnrecognizedPropertyException unrecognized) {
 
-                return ResponseHelper.error(
+                return ResponseFactory.error(
                         HttpStatus.BAD_REQUEST,
                         ErrorCode.BAD_REQUEST,
                         "Unknown field: " + unrecognized.getPropertyName()
@@ -88,7 +89,7 @@ public class GlobalExceptionHandler {
             cause = cause.getCause();
         }
 
-        return ResponseHelper.error(
+        return ResponseFactory.error(
                 HttpStatus.BAD_REQUEST,
                 ErrorCode.BAD_REQUEST,
                 "Invalid request body"
@@ -102,7 +103,7 @@ public class GlobalExceptionHandler {
     ) {
         LogHelper.warn("AUTHENTICATION_FAILED : {}", exception.getMessage());
 
-        return ResponseHelper.error(
+        return ResponseFactory.error(
                 HttpStatus.UNAUTHORIZED,
                 ErrorCode.AUTHENTICATION_FAILED,
                 exception.getMessage()
@@ -116,7 +117,7 @@ public class GlobalExceptionHandler {
     ) {
         LogHelper.warn("ACCESS_DENIED : {}", exception.getMessage());
 
-        return ResponseHelper.error(
+        return ResponseFactory.error(
                 HttpStatus.FORBIDDEN,
                 ErrorCode.ACCESS_DENIED,
                 exception.getMessage()
@@ -130,7 +131,7 @@ public class GlobalExceptionHandler {
     ) {
         LogHelper.warn("RESOURCE_NOT_FOUND : {}", exception.getMessage());
 
-        return ResponseHelper.error(
+        return ResponseFactory.error(
                 HttpStatus.NOT_FOUND,
                 ErrorCode.RESOURCE_NOT_FOUND,
                 exception.getMessage()
@@ -144,7 +145,7 @@ public class GlobalExceptionHandler {
     ) {
         LogHelper.warn("CONFLICT : {}", exception.getMessage());
 
-        return ResponseHelper.error(
+        return ResponseFactory.error(
                 HttpStatus.CONFLICT,
                 ErrorCode.CONFLICT,
                 exception.getMessage()
@@ -161,7 +162,7 @@ public class GlobalExceptionHandler {
                 ex.getHeaderName()
         );
 
-        return ResponseHelper.error(
+        return ResponseFactory.error(
                 HttpStatus.BAD_REQUEST,
                 ErrorCode.BAD_REQUEST,
                 "Missing required header: " + ex.getHeaderName()
@@ -188,11 +189,29 @@ public class GlobalExceptionHandler {
                 details
         );
 
-        return ResponseHelper.error(
+        return ResponseFactory.error(
                 HttpStatus.BAD_REQUEST,
                 ErrorCode.VALIDATION_ERROR,
                 "Validation failed",
                 details
+        );
+    }
+
+    // 400 : VALIDATION_PATH_PARAM_ERROR
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Object>> handleMethodArgumentTypeMismatch(
+            MethodArgumentTypeMismatchException ex
+    ) {
+        LogHelper.warn(
+                "INVALID_PARAMETER : {} = {}",
+                ex.getName(),
+                ex.getValue()
+        );
+
+        return ResponseFactory.error(
+                HttpStatus.BAD_REQUEST,
+                ErrorCode.BAD_REQUEST,
+                "Invalid value for parameter: " + ex.getName()
         );
     }
 
@@ -203,7 +222,7 @@ public class GlobalExceptionHandler {
     ) {
         LogHelper.error("INTERNAL_SERVER_ERROR {}", ex.getMessage());
 
-        return ResponseHelper.error(
+        return ResponseFactory.error(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 ErrorCode.INTERNAL_SERVER_ERROR,
                 "Something went wrong"

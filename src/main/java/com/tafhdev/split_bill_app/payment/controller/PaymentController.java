@@ -7,6 +7,8 @@ import com.tafhdev.split_bill_app.payment.controller.mapper.PaymentApiMapper;
 import com.tafhdev.split_bill_app.payment.service.PaymentService;
 import com.tafhdev.split_bill_app.payment.service.dto.CreatePaymentCommand;
 import com.tafhdev.split_bill_app.payment.service.dto.PaymentResult;
+import com.tafhdev.split_bill_app.shared.infrastructure.web.response.ApiResponse;
+import com.tafhdev.split_bill_app.shared.infrastructure.web.response.ResponseFactory;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
@@ -33,7 +35,7 @@ public class PaymentController {
     }
 
     @PostMapping
-    public ResponseEntity<PaymentResponse> createPayment(
+    public ResponseEntity<ApiResponse<PaymentResponse>> createPayment(
             @PathVariable
             UUID groupId,
 
@@ -53,8 +55,8 @@ public class PaymentController {
 
         PaymentResult result = paymentService.createPayment(command);
 
-        return ResponseEntity
-                .status(result.reply() ? HttpStatus.OK : HttpStatus.CREATED)
-                .body(result.response());
+        return result.reply()
+                ? ResponseFactory.ok(result.response())
+                : ResponseFactory.created(result.response());
     }
 }
