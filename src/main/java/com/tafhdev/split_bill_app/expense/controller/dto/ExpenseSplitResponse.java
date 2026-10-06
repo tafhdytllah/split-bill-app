@@ -1,6 +1,5 @@
 package com.tafhdev.split_bill_app.expense.controller.dto;
 
-import com.tafhdev.split_bill_app.expense.domain.ExpenseSplit;
 import tools.jackson.databind.annotation.JsonSerialize;
 import tools.jackson.databind.ser.std.ToStringSerializer;
 
