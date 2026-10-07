@@ -5,7 +5,6 @@ import com.tafhdev.split_bill_app.audit.domain.AuditEntityType;
 import com.tafhdev.split_bill_app.audit.domain.AuditLog;
 import com.tafhdev.split_bill_app.audit.repository.AuditLogRepository;
 import com.tafhdev.split_bill_app.expense.controller.dto.ExpenseResponse;
-import com.tafhdev.split_bill_app.expense.controller.dto.SplitParticipantRequest;
 import com.tafhdev.split_bill_app.expense.controller.mapper.ExpenseApiMapper;
 import com.tafhdev.split_bill_app.expense.domain.*;
 import com.tafhdev.split_bill_app.expense.domain.calculator.SplitCalculator;
@@ -34,7 +33,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class ExpenseService {
@@ -100,18 +98,25 @@ public class ExpenseService {
 
         String requestHash = idempotencyHashGenerator.generate(request.toString());
 
-        Optional<Idempotency> existing =
-                idempotencyService.find(
-                        IdempotencyScope.EXPENSE,
-                        command.idempotencyKey()
-                );
+        Idempotency idempotency = Idempotency.createNew(
+                idGenerator.generate(),
+                IdempotencyScope.EXPENSE,
+                command.idempotencyKey(),
+                requestHash,
+                Instant.now(clock)
+        );
 
-        if (existing.isPresent()) {
+        boolean idempotencyCreated = idempotencyService.insertIfAbsent(idempotency);
 
-            Idempotency idempotency = existing.get();
+        if (!idempotencyCreated) {
+
+            Idempotency existing = idempotencyService.find(
+                    IdempotencyScope.EXPENSE,
+                    command.idempotencyKey()
+            ).orElseThrow(() -> new IllegalStateException("idempotency record not found"));
 
             boolean sameHash = MessageDigest.isEqual(
-                    idempotency.getRequestHash().getBytes(StandardCharsets.UTF_8),
+                    existing.getRequestHash().getBytes(StandardCharsets.UTF_8),
                     requestHash.getBytes(StandardCharsets.UTF_8)
             );
 
@@ -122,7 +127,7 @@ public class ExpenseService {
             }
 
             ExpenseResponse response = idempotencyService.getResponse(
-                    idempotency,
+                    existing,
                     ExpenseResponse.class
             );
 
@@ -162,13 +167,6 @@ public class ExpenseService {
                 calculator.calculate(
                         command.amount(),
                         participants
-                );
-
-        Idempotency idempotency =
-                idempotencyService.create(
-                        IdempotencyScope.EXPENSE,
-                        command.idempotencyKey(),
-                        requestHash
                 );
 
         Expense expense = Expense.createNew(

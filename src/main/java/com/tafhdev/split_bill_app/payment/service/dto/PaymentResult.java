@@ -6,6 +6,6 @@ public record PaymentResult(
 
         PaymentResponse response,
 
-        boolean reply
+        boolean replay
 ) {
 }

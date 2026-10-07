@@ -71,7 +71,7 @@ class BillGroupServiceTest {
     @Test
     void shouldCreateGroup() {
 
-        // given
+        UUID idempotencyId = UUID.randomUUID();
         UUID groupId = UUID.randomUUID();
         UUID participantId1 = UUID.randomUUID();
         UUID participantId2 = UUID.randomUUID();
@@ -86,25 +86,16 @@ class BillGroupServiceTest {
                         List.of("Taufik", "Andi")
                 );
 
-        Idempotency idempotency = mock(Idempotency.class);
-
         BillGroupResponse response = mock(BillGroupResponse.class);
 
         when(idempotencyHashGenerator.generate(any(String.class)))
                 .thenReturn(requestHash);
 
-        when(idempotencyService.find(
-                IdempotencyScope.GROUP,
-                idempotencyKey
-        )).thenReturn(Optional.empty());
-
-        when(idempotencyService.create(
-                IdempotencyScope.GROUP,
-                idempotencyKey,
-                requestHash
-        )).thenReturn(idempotency);
+        when(idempotencyService.insertIfAbsent(any(Idempotency.class)))
+                .thenReturn(true);
 
         when(idGenerator.generate())
+                .thenReturn(idempotencyId)
                 .thenReturn(groupId)
                 .thenReturn(participantId1)
                 .thenReturn(participantId2);
@@ -123,24 +114,14 @@ class BillGroupServiceTest {
         assertThat(result.response())
                 .isSameAs(response);
 
-        assertThat(result.reply())
+        assertThat(result.replay())
                 .isFalse();
 
         verify(idempotencyHashGenerator)
                 .generate(any(String.class));
 
         verify(idempotencyService)
-                .find(
-                        IdempotencyScope.GROUP,
-                        idempotencyKey
-                );
-
-        verify(idempotencyService)
-                .create(
-                        IdempotencyScope.GROUP,
-                        idempotencyKey,
-                        requestHash
-                );
+                .insertIfAbsent(any(Idempotency.class));
 
         verify(billGroupRepository)
                 .save(any(BillGroup.class));
@@ -150,19 +131,33 @@ class BillGroupServiceTest {
 
         verify(idempotencyService)
                 .complete(
-                        idempotency,
-                        201,
-                        response
+                        any(Idempotency.class),
+                        eq(201),
+                        same(response)
                 );
 
-        verify(idGenerator, times(3))
+        verify(idGenerator, times(4))
                 .generate();
+
+        verify(idempotencyService, never())
+                .find(
+                        any(IdempotencyScope.class),
+                        any(String.class)
+                );
+
+        verify(idempotencyService, never())
+                .getResponse(
+                        any(Idempotency.class),
+                        eq(BillGroupResponse.class)
+                );
     }
 
     @Test
     void shouldReplayExistingGroupWhenIdempotencyKeyIsReusedWithSameRequest() {
 
         // given
+        UUID idempotencyId = UUID.randomUUID();
+
         String idempotencyKey = "idem-key-1";
         String requestHash = "request-hash";
 
@@ -178,6 +173,12 @@ class BillGroupServiceTest {
 
         when(idempotencyHashGenerator.generate(any(String.class)))
                 .thenReturn(requestHash);
+
+        when(idGenerator.generate())
+                .thenReturn(idempotencyId);
+
+        when(idempotencyService.insertIfAbsent(any(Idempotency.class)))
+                .thenReturn(false);
 
         when(idempotencyService.find(
                 IdempotencyScope.GROUP,
@@ -200,8 +201,17 @@ class BillGroupServiceTest {
         assertThat(result.response())
                 .isSameAs(response);
 
-        assertThat(result.reply())
+        assertThat(result.replay())
                 .isTrue();
+
+        verify(idempotencyHashGenerator)
+                .generate(any(String.class));
+
+        verify(idGenerator)
+                .generate();
+
+        verify(idempotencyService)
+                .insertIfAbsent(any(Idempotency.class));
 
         verify(idempotencyService)
                 .find(
@@ -216,16 +226,19 @@ class BillGroupServiceTest {
                 );
 
         verify(idempotencyService, never())
-                .create(
-                        any(),
-                        any(),
+                .complete(
+                        any(Idempotency.class),
+                        anyInt(),
                         any()
                 );
 
         verify(billGroupRepository, never())
                 .save(any(BillGroup.class));
 
-        verify(idGenerator, never())
+        verify(billGroupApiMapper, never())
+                .toResponse(any(BillGroup.class));
+
+        verify(idGenerator, times(1))
                 .generate();
     }
 
@@ -233,6 +246,8 @@ class BillGroupServiceTest {
     void shouldRejectWhenIdempotencyKeyIsReusedWithDifferentRequest() {
 
         // given
+        UUID idempotencyId = UUID.randomUUID();
+
         String idempotencyKey = "idem-key-1";
 
         CreateBillGroupCommand command =
@@ -246,6 +261,12 @@ class BillGroupServiceTest {
 
         when(idempotencyHashGenerator.generate(any(String.class)))
                 .thenReturn("new-request-hash");
+
+        when(idGenerator.generate())
+                .thenReturn(idempotencyId);
+
+        when(idempotencyService.insertIfAbsent(any(Idempotency.class)))
+                .thenReturn(false);
 
         when(idempotencyService.find(
                 IdempotencyScope.GROUP,
@@ -264,6 +285,15 @@ class BillGroupServiceTest {
                         "idempotency key reused with different request"
                 );
 
+        verify(idempotencyHashGenerator)
+                .generate(any(String.class));
+
+        verify(idGenerator)
+                .generate();
+
+        verify(idempotencyService)
+                .insertIfAbsent(any(Idempotency.class));
+
         verify(idempotencyService)
                 .find(
                         IdempotencyScope.GROUP,
@@ -277,16 +307,19 @@ class BillGroupServiceTest {
                 );
 
         verify(idempotencyService, never())
-                .create(
-                        any(),
-                        any(),
+                .complete(
+                        any(Idempotency.class),
+                        anyInt(),
                         any()
                 );
 
         verify(billGroupRepository, never())
                 .save(any(BillGroup.class));
 
-        verify(idGenerator, never())
+        verify(billGroupApiMapper, never())
+                .toResponse(any(BillGroup.class));
+
+        verify(idGenerator, times(1))
                 .generate();
     }
 
@@ -294,6 +327,7 @@ class BillGroupServiceTest {
     void shouldCreateParticipantsWithGeneratedIdsAndGroupId() {
 
         // given
+        UUID idempotencyId = UUID.randomUUID();
         UUID groupId = UUID.randomUUID();
         UUID participantId1 = UUID.randomUUID();
         UUID participantId2 = UUID.randomUUID();
@@ -308,27 +342,19 @@ class BillGroupServiceTest {
                         List.of("Taufik", "Andi")
                 );
 
-        Idempotency idempotency = mock(Idempotency.class);
         BillGroupResponse response = mock(BillGroupResponse.class);
 
         when(idempotencyHashGenerator.generate(any(String.class)))
                 .thenReturn(requestHash);
 
-        when(idempotencyService.find(
-                IdempotencyScope.GROUP,
-                idempotencyKey
-        )).thenReturn(Optional.empty());
-
-        when(idempotencyService.create(
-                IdempotencyScope.GROUP,
-                idempotencyKey,
-                requestHash
-        )).thenReturn(idempotency);
-
         when(idGenerator.generate())
+                .thenReturn(idempotencyId)
                 .thenReturn(groupId)
                 .thenReturn(participantId1)
                 .thenReturn(participantId2);
+
+        when(idempotencyService.insertIfAbsent(any(Idempotency.class)))
+                .thenReturn(true);
 
         when(billGroupRepository.save(any(BillGroup.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -381,5 +407,18 @@ class BillGroupServiceTest {
                         assertThat(participant.getGroupId())
                                 .isEqualTo(groupId)
                 );
+
+        verify(idempotencyService)
+                .insertIfAbsent(any(Idempotency.class));
+
+        verify(idempotencyService)
+                .complete(
+                        any(Idempotency.class),
+                        eq(201),
+                        same(response)
+                );
+
+        verify(idGenerator, times(4))
+                .generate();
     }
 }

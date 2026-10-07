@@ -8,6 +8,7 @@ import com.tafhdev.split_bill_app.group.repository.BillGroupRepository;
 import com.tafhdev.split_bill_app.group.service.dto.BillGroupResult;
 import com.tafhdev.split_bill_app.group.service.dto.CreateBillGroupCommand;
 import com.tafhdev.split_bill_app.shared.application.exception.ConflictException;
+import com.tafhdev.split_bill_app.shared.application.exception.ResourceNotFoundException;
 import com.tafhdev.split_bill_app.shared.application.service.IdempotencyHashGenerator;
 import com.tafhdev.split_bill_app.shared.application.service.IdempotencyRequestBuilder;
 import com.tafhdev.split_bill_app.shared.application.service.IdempotencyService;
@@ -62,18 +63,27 @@ public class BillGroupService {
 
         String requestHash = idempotencyHashGenerator.generate(request);
 
-        Optional<Idempotency> existing =
-                idempotencyService.find(
-                        IdempotencyScope.GROUP,
-                        command.idempotencyKey()
-                );
+        Idempotency idempotency = Idempotency.createNew(
+                idGenerator.generate(),
+                IdempotencyScope.GROUP,
+                command.idempotencyKey(),
+                requestHash,
+                Instant.now(clock)
+        );
 
-        if (existing.isPresent()) {
-            Idempotency idempotency = existing.get();
+        boolean idempotencyCreated = idempotencyService.insertIfAbsent(idempotency);
 
-            boolean sameHash = MessageDigest.isEqual(
-                    idempotency.getRequestHash()
-                            .getBytes(StandardCharsets.UTF_8),
+        if (!idempotencyCreated) {
+
+            Idempotency existing = idempotencyService.find(
+                    IdempotencyScope.GROUP,
+                    command.idempotencyKey()
+            ).orElseThrow(() ->
+                    new IllegalStateException("idempotency record not found")
+            );
+
+                boolean sameHash = MessageDigest.isEqual(
+                    existing.getRequestHash().getBytes(StandardCharsets.UTF_8),
                     requestHash.getBytes(StandardCharsets.UTF_8)
             );
 
@@ -84,7 +94,7 @@ public class BillGroupService {
             }
 
             BillGroupResponse response = idempotencyService.getResponse(
-                    idempotency,
+                    existing,
                     BillGroupResponse.class
             );
 
@@ -93,13 +103,6 @@ public class BillGroupService {
                     true
             );
         }
-
-        Idempotency idempotency =
-                idempotencyService.create(
-                        IdempotencyScope.GROUP,
-                        command.idempotencyKey(),
-                        requestHash
-                );
 
         UUID groupId = idGenerator.generate();
 

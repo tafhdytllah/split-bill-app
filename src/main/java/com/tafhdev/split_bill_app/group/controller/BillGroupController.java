@@ -48,7 +48,7 @@ public class BillGroupController {
 
         BillGroupResult result = billGroupService.createGroup(command);
 
-        return result.reply()
+        return result.replay()
                 ? ResponseFactory.ok(result.response())
                 : ResponseFactory.created(result.response());
     }

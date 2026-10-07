@@ -10,7 +10,6 @@ import com.tafhdev.split_bill_app.shared.infrastructure.web.response.ApiResponse
 import com.tafhdev.split_bill_app.shared.infrastructure.web.response.ResponseFactory;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -54,7 +53,7 @@ public class PaymentController {
 
         PaymentResult result = paymentService.createPayment(command);
 
-        return result.reply()
+        return result.replay()
                 ? ResponseFactory.ok(result.response())
                 : ResponseFactory.created(result.response());
     }

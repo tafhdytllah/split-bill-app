@@ -34,6 +34,30 @@ public class IdempotencyRepositoryImpl implements IdempotencyRepository {
     }
 
     @Override
+    public Idempotency saveAndFlush(Idempotency idempotency) {
+
+        IdempotencyEntity entity = idempotencyMapper.toEntity(idempotency);
+
+        IdempotencyEntity savedEntity = idempotencyJpaRepository.saveAndFlush(entity);
+
+        return idempotencyMapper.toDomain(savedEntity);
+    }
+
+    @Override
+    public boolean insertIfAbsent(Idempotency idempotency) {
+
+        int inserted = idempotencyJpaRepository.insertIfAbsent(
+                idempotency.getId(),
+                idempotency.getScope().name(),
+                idempotency.getIdempotencyKey(),
+                idempotency.getRequestHash(),
+                idempotency.getCreatedAt()
+        );
+
+        return inserted == 1;
+    }
+
+    @Override
     public Optional<Idempotency> findByScopeAndKey(
             IdempotencyScope scope,
             String idempotencyKey

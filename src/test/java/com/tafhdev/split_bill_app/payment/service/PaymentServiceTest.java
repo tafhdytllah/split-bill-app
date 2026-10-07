@@ -143,6 +143,9 @@ class PaymentServiceTest {
                 paymentAmount
         );
 
+        when(billGroupRepository.findByIdForUpdate(groupId))
+                .thenReturn(Optional.of(group));
+
         when(idempotencyService.find(
                 IdempotencyScope.PAYMENT,
                 command.idempotencyKey()
@@ -151,9 +154,6 @@ class PaymentServiceTest {
 
         when(idempotencyHashGenerator.generate(any()))
                 .thenReturn("request-hash");
-
-        when(billGroupRepository.findById(groupId))
-                .thenReturn(Optional.of(group));
 
         when(group.requireParticipant(fromParticipantId))
                 .thenReturn(fromParticipant);
@@ -213,8 +213,11 @@ class PaymentServiceTest {
         assertThat(result.response())
                 .isSameAs(paymentResponse);
 
-        assertThat(result.reply())
+        assertThat(result.replay())
                 .isFalse();
+
+        verify(billGroupRepository)
+                .findByIdForUpdate(groupId);
 
         verify(paymentRepository)
                 .save(any(Payment.class));
@@ -243,6 +246,9 @@ class PaymentServiceTest {
 
         Idempotency idempotency = mock(Idempotency.class);
 
+        when(billGroupRepository.findByIdForUpdate(groupId))
+                .thenReturn(Optional.of(group));
+
         when(idempotencyService.find(
                 IdempotencyScope.PAYMENT,
                 command.idempotencyKey()
@@ -267,10 +273,12 @@ class PaymentServiceTest {
         assertThat(result.response())
                 .isSameAs(paymentResponse);
 
-        assertThat(result.reply())
+        assertThat(result.replay())
                 .isTrue();
 
-        verifyNoInteractions(billGroupRepository);
+        verify(billGroupRepository)
+                .findByIdForUpdate(groupId);
+
         verifyNoInteractions(expenseRepository);
         verifyNoInteractions(paymentRepository);
         verifyNoInteractions(auditLogRepository);
@@ -289,6 +297,9 @@ class PaymentServiceTest {
         );
 
         Idempotency idempotency = mock(Idempotency.class);
+
+        when(billGroupRepository.findByIdForUpdate(groupId))
+                .thenReturn(Optional.of(group));
 
         when(idempotencyService.find(
                 IdempotencyScope.PAYMENT,
@@ -310,7 +321,9 @@ class PaymentServiceTest {
                         "idempotency key reused with different request"
                 );
 
-        verifyNoInteractions(billGroupRepository);
+        verify(billGroupRepository)
+                .findByIdForUpdate(groupId);
+
         verifyNoInteractions(paymentRepository);
         verifyNoInteractions(expenseRepository);
     }
@@ -326,16 +339,7 @@ class PaymentServiceTest {
                 paymentAmount
         );
 
-        when(idempotencyService.find(
-                IdempotencyScope.PAYMENT,
-                command.idempotencyKey()
-        ))
-                .thenReturn(Optional.empty());
-
-        when(idempotencyHashGenerator.generate(any()))
-                .thenReturn("request-hash");
-
-        when(billGroupRepository.findById(groupId))
+        when(billGroupRepository.findByIdForUpdate(groupId))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() ->
@@ -344,8 +348,14 @@ class PaymentServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("group not found");
 
+        verify(billGroupRepository)
+                .findByIdForUpdate(groupId);
+
+        verifyNoInteractions(idempotencyService);
+        verifyNoInteractions(idempotencyHashGenerator);
         verifyNoInteractions(expenseRepository);
         verifyNoInteractions(paymentRepository);
+        verifyNoInteractions(auditLogRepository);
         verifyNoInteractions(paymentOutstandingCalculator);
     }
 
@@ -362,6 +372,9 @@ class PaymentServiceTest {
                 )
         );
 
+        when(billGroupRepository.findByIdForUpdate(groupId))
+                .thenReturn(Optional.of(group));
+
         when(idempotencyService.find(
                 IdempotencyScope.PAYMENT,
                 command.idempotencyKey()
@@ -370,9 +383,6 @@ class PaymentServiceTest {
 
         when(idempotencyHashGenerator.generate(any()))
                 .thenReturn("request-hash");
-
-        when(billGroupRepository.findById(groupId))
-                .thenReturn(Optional.of(group));
 
         when(group.requireParticipant(fromParticipantId))
                 .thenReturn(fromParticipant);
@@ -401,6 +411,9 @@ class PaymentServiceTest {
                 .hasMessage(
                         "payment amount exceeds outstanding debt"
                 );
+
+        verify(billGroupRepository)
+                .findByIdForUpdate(groupId);
 
         verify(paymentRepository)
                 .findByGroupId(groupId);

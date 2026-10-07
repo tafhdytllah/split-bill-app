@@ -6,12 +6,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -92,8 +96,7 @@ class PaymentIntegrationTest {
     }
 
     @Test
-    void shouldReturnOkWhenPaymentIsIdempotentReplay()
-            throws Exception {
+    void shouldReturnOkWhenPaymentIsIdempotentReplay() throws Exception {
 
         GroupTestData group = createGroup();
 
@@ -167,8 +170,7 @@ class PaymentIntegrationTest {
     }
 
     @Test
-    void shouldReturnConflictWhenIdempotencyKeyIsReusedWithDifferentRequest()
-            throws Exception {
+    void shouldReturnConflictWhenIdempotencyKeyIsReusedWithDifferentRequest() throws Exception {
 
         GroupTestData group = createGroup();
 
@@ -236,8 +238,7 @@ class PaymentIntegrationTest {
     }
 
     @Test
-    void shouldRejectWhenPaymentAmountExceedsOutstandingDebt()
-            throws Exception {
+    void shouldRejectWhenPaymentAmountExceedsOutstandingDebt() throws Exception {
 
         GroupTestData group = createGroup();
 
@@ -280,8 +281,7 @@ class PaymentIntegrationTest {
     }
 
     @Test
-    void shouldReturnNotFoundWhenGroupDoesNotExist()
-            throws Exception {
+    void shouldReturnNotFoundWhenGroupDoesNotExist() throws Exception {
 
         UUID groupId = UUID.randomUUID();
         UUID fromParticipantId = UUID.randomUUID();
@@ -313,6 +313,149 @@ class PaymentIntegrationTest {
                         .value("RESOURCE_NOT_FOUND"))
                 .andExpect(jsonPath("$.errors.message")
                         .value("group not found"));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void shouldHandleConcurrentPaymentWithSameIdempotencyKey() throws Exception {
+
+        GroupTestData group = createGroup();
+
+        createExpense(
+                group.groupId(),
+                group.taufikId(),
+                group.taufikId(),
+                group.andiId(),
+                new BigDecimal("100000.00")
+        );
+
+        try(ExecutorService executor = Executors.newFixedThreadPool(2)) {
+            CountDownLatch start = new CountDownLatch(1);
+            String idempotencyKey = "payment-race-" + UUID.randomUUID();
+
+            Callable<MvcResult> requestA = () -> {
+                start.await();
+
+                return mockMvc
+                        .perform(
+                                post("/api/groups/{groupId}/payments", group.groupId())
+                                        .header("Idempotency-Key", idempotencyKey)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content("""
+                                                    {
+                                                      "fromParticipantId": "%s",
+                                                      "toParticipantId": "%s",
+                                                      "amount": "50000.00"
+                                                    }
+                                                  """.formatted(group.andiId(), group.taufikId()))
+                        )
+                        .andReturn();
+            };
+
+            Callable<MvcResult> requestB = () -> {
+                start.await();
+
+                return mockMvc
+                        .perform(
+                                post("/api/groups/{groupId}/payments", group.groupId())
+                                        .header("Idempotency-Key", idempotencyKey)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content("""
+                                                    {
+                                                      "fromParticipantId": "%s",
+                                                      "toParticipantId": "%s",
+                                                      "amount": "50000.00"
+                                                    }
+                                                  """.formatted(group.andiId(), group.taufikId()))
+                        )
+                        .andReturn();
+            };
+
+            Future<MvcResult> futureA = executor.submit(requestA);
+            Future<MvcResult> futureB = executor.submit(requestB);
+
+            start.countDown();
+
+            MvcResult resultA = futureA.get();
+            MvcResult resultB = futureB.get();
+
+            assertThat(List.of(
+                    resultA.getResponse().getStatus(),
+                    resultB.getResponse().getStatus()
+            ))
+                    .containsExactlyInAnyOrder(200, 201);
+        }
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void shouldPreventConcurrentPaymentsFromExceedingOutstandingDebt() throws Exception {
+
+        GroupTestData group = createGroup();
+
+        createExpense(
+                group.groupId(),
+                group.taufikId(),
+                group.taufikId(),
+                group.andiId(),
+                new BigDecimal("100000.00")
+        );
+
+        try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
+            CountDownLatch start = new CountDownLatch(1);
+            String idempotencyKeyA = "payment-race-a-" + UUID.randomUUID();
+            String idempotencyKeyB = "payment-race-b-" + UUID.randomUUID();
+
+            Callable<MvcResult> requestA = () -> {
+                start.await();
+
+                return mockMvc.perform(
+                                post("/api/groups/{groupId}/payments", group.groupId())
+                                        .header("Idempotency-Key", idempotencyKeyA)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content("""
+                                                    {
+                                                      "fromParticipantId": "%s",
+                                                      "toParticipantId": "%s",
+                                                      "amount": "50000.00"
+                                                    }
+                                                  """.formatted(group.andiId(), group.taufikId()))
+                        )
+                        .andReturn();
+            };
+
+            Callable<MvcResult> requestB = () -> {
+                start.await();
+
+                return mockMvc.perform(
+                                post("/api/groups/{groupId}/payments", group.groupId())
+                                        .header("Idempotency-Key", idempotencyKeyB)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content("""
+                                                    {
+                                                      "fromParticipantId": "%s",
+                                                      "toParticipantId": "%s",
+                                                      "amount": "50000.00"
+                                                    }
+                                                  """.formatted(group.andiId(), group.taufikId()))
+                        )
+                        .andReturn();
+            };
+
+            Future<MvcResult> futureA = executor.submit(requestA);
+            Future<MvcResult> futureB = executor.submit(requestB);
+
+            start.countDown();
+
+            MvcResult resultA = futureA.get();
+            MvcResult resultB = futureB.get();
+
+            assertThat(List.of(
+                    resultA.getResponse().getStatus(),
+                    resultB.getResponse().getStatus()
+            ))
+                    .containsExactlyInAnyOrder(201, 400);
+        }
     }
 
     private GroupTestData createGroup() throws Exception {

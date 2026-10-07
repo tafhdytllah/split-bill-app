@@ -10,4 +10,6 @@ public interface BillGroupRepository {
     BillGroup save(BillGroup group);
 
     Optional<BillGroup> findById(UUID groupId);
+
+    Optional<BillGroup> findByIdForUpdate(UUID groupId);
 }

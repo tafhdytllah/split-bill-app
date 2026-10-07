@@ -8,6 +8,8 @@ import com.tafhdev.split_bill_app.group.controller.dto.BillGroupResponse;
 import com.tafhdev.split_bill_app.group.service.BillGroupService;
 import com.tafhdev.split_bill_app.group.service.dto.BillGroupResult;
 import com.tafhdev.split_bill_app.group.service.dto.CreateBillGroupCommand;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.transaction.annotation.Propagation;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -18,7 +20,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -45,19 +49,13 @@ class ExpenseIntegrationTest {
     @Test
     void shouldCreateExpenseEndToEnd() throws Exception {
 
-        // given
-        BillGroupResponse group = createGroup(
-        );
+        BillGroupResponse group = createGroup();
 
         UUID groupId = group.id();
 
-        UUID payerId = group.participants()
-                .get(0)
-                .id();
+        UUID payerId = group.participants().get(0).id();
 
-        UUID secondParticipantId = group.participants()
-                .get(1)
-                .id();
+        UUID secondParticipantId = group.participants().get(1).id();
 
         String idempotencyKey = UUID.randomUUID().toString();
 
@@ -78,19 +76,14 @@ class ExpenseIntegrationTest {
                         ]
                     }
                 }
-                """.formatted(
-                payerId,
-                payerId,
-                secondParticipantId
+                """.formatted(payerId, payerId, secondParticipantId
         );
 
-        // when
-        String responseBody = mockMvc.perform(
-                        post("/api/groups/{groupId}/expenses", groupId)
-                                .header("Idempotency-Key", idempotencyKey)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(request)
-                )
+        String responseBody = mockMvc
+                .perform(post("/api/groups/{groupId}/expenses", groupId)
+                        .header("Idempotency-Key", idempotencyKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.id").exists())
                 .andExpect(jsonPath("$.data.groupId")
@@ -113,16 +106,14 @@ class ExpenseIntegrationTest {
                 .getResponse()
                 .getContentAsString();
 
-        // then
         JsonNode root = objectMapper.readTree(responseBody);
 
         UUID expenseId = UUID.fromString(
-                root.get("data")
-                        .get("id").asString()
+                root.get("data").get("id").asString()
         );
 
         Expense savedExpense = expenseRepository.findById(expenseId)
-                .orElseThrow();
+                        .orElseThrow();
 
         assertThat(savedExpense.getId())
                 .isEqualTo(expenseId);
@@ -149,19 +140,13 @@ class ExpenseIntegrationTest {
     @Test
     void shouldReplayExpenseWhenUsingSameIdempotencyKey() throws Exception {
 
-        // given
-        BillGroupResponse group = createGroup(
-        );
+        BillGroupResponse group = createGroup();
 
         UUID groupId = group.id();
 
-        UUID payerId = group.participants()
-                .get(0)
-                .id();
+        UUID payerId = group.participants().get(0).id();
 
-        UUID secondParticipantId = group.participants()
-                .get(1)
-                .id();
+        UUID secondParticipantId = group.participants().get(1).id();
 
         String idempotencyKey = UUID.randomUUID().toString();
 
@@ -182,22 +167,14 @@ class ExpenseIntegrationTest {
                         ]
                     }
                 }
-                """.formatted(
-                payerId,
-                payerId,
-                secondParticipantId
+                """.formatted(payerId, payerId, secondParticipantId
         );
 
-        // first request
-        String firstResponseBody = mockMvc.perform(
-                        post("/api/groups/{groupId}/expenses", groupId)
-                                .header(
-                                        "Idempotency-Key",
-                                        idempotencyKey
-                                )
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(request)
-                )
+        String firstResponseBody = mockMvc
+                .perform(post("/api/groups/{groupId}/expenses", groupId)
+                        .header("Idempotency-Key", idempotencyKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.id").exists())
                 .andReturn()
@@ -205,21 +182,14 @@ class ExpenseIntegrationTest {
                 .getContentAsString();
 
         UUID firstExpenseId = UUID.fromString(
-                objectMapper.readTree(firstResponseBody)
-                        .get("data")
-                        .get("id").asString()
+                objectMapper.readTree(firstResponseBody).get("data").get("id").asString()
         );
 
-        // second request
-        String secondResponseBody = mockMvc.perform(
-                        post("/api/groups/{groupId}/expenses", groupId)
-                                .header(
-                                        "Idempotency-Key",
-                                        idempotencyKey
-                                )
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(request)
-                )
+        String secondResponseBody = mockMvc
+                .perform(post("/api/groups/{groupId}/expenses", groupId)
+                        .header("Idempotency-Key", idempotencyKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id")
                         .value(firstExpenseId.toString()))
@@ -237,11 +207,8 @@ class ExpenseIntegrationTest {
                 .getResponse()
                 .getContentAsString();
 
-        // then
         UUID secondExpenseId = UUID.fromString(
-                objectMapper.readTree(secondResponseBody)
-                        .get("data")
-                        .get("id").asString()
+                objectMapper.readTree(secondResponseBody).get("data").get("id").asString()
         );
 
         assertThat(secondExpenseId)
@@ -252,9 +219,80 @@ class ExpenseIntegrationTest {
     }
 
     @Test
+    void shouldRejectWhenIdempotencyKeyIsReusedWithDifferentRequest() throws Exception {
+
+        BillGroupResponse group = createGroup();
+
+        UUID groupId = group.id();
+
+        UUID payerId = group.participants().get(0).id();
+
+        UUID secondParticipantId = group.participants().get(1).id();
+
+        String idempotencyKey = UUID.randomUUID().toString();
+
+        String firstRequest = """
+                {
+                    "paidBy": "%s",
+                    "amount": 300000.00,
+                    "category": "FOOD",
+                    "split": {
+                        "type": "EQUAL",
+                        "participants": [
+                            {
+                                "participantId": "%s"
+                            },
+                            {
+                                "participantId": "%s"
+                            }
+                        ]
+                    }
+                }
+                """.formatted(payerId, payerId, secondParticipantId
+        );
+
+        String secondRequest = """
+                {
+                    "paidBy": "%s",
+                    "amount": 500000.00,
+                    "category": "FOOD",
+                    "split": {
+                        "type": "EQUAL",
+                        "participants": [
+                            {
+                                "participantId": "%s"
+                            },
+                            {
+                                "participantId": "%s"
+                            }
+                        ]
+                    }
+                }
+                """.formatted(payerId, payerId, secondParticipantId
+        );
+
+        mockMvc.perform(post("/api/groups/{groupId}/expenses", groupId)
+                        .header("Idempotency-Key", idempotencyKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(firstRequest))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/groups/{groupId}/expenses", groupId)
+                        .header("Idempotency-Key", idempotencyKey)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(secondRequest))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errors.code")
+                        .value("CONFLICT"))
+                .andExpect(jsonPath("$.errors.message")
+                        .value(
+                                "idempotency key reused with different request"
+                        ));
+    }
+
+    @Test
     void shouldReturnNotFoundWhenGroupDoesNotExist() throws Exception {
 
-        // given
         UUID groupId = UUID.randomUUID();
         UUID participantId = UUID.randomUUID();
 
@@ -268,25 +306,20 @@ class ExpenseIntegrationTest {
                         "participants": [
                             {
                                 "participantId": "%s"
+                            },
+                            {
+                                "participantId": "%s"
                             }
                         ]
                     }
                 }
-                """.formatted(
-                participantId,
-                participantId
+                """.formatted(participantId, participantId, UUID.randomUUID()
         );
 
-        // when & then
-        mockMvc.perform(
-                        post("/api/groups/{groupId}/expenses", groupId)
-                                .header(
-                                        "Idempotency-Key",
-                                        UUID.randomUUID().toString()
-                                )
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(request)
-                )
+        mockMvc.perform(post("/api/groups/{groupId}/expenses", groupId)
+                        .header("Idempotency-Key", UUID.randomUUID().toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.errors.code")
                         .value("RESOURCE_NOT_FOUND"))
@@ -297,17 +330,15 @@ class ExpenseIntegrationTest {
     @Test
     void shouldRejectExpenseWhenPayerIsNotInGroup() throws Exception {
 
-        // given
-        BillGroupResponse group = createGroup(
-        );
+        BillGroupResponse group = createGroup();
 
         UUID groupId = group.id();
 
         UUID payerId = UUID.randomUUID();
 
-        UUID participantId = group.participants()
-                .getFirst()
-                .id();
+        UUID participantId = group.participants().get(0).id();
+
+        UUID secondParticipantId = group.participants().get(1).id();
 
         String request = """
                 {
@@ -319,28 +350,169 @@ class ExpenseIntegrationTest {
                         "participants": [
                             {
                                 "participantId": "%s"
+                            },
+                            {
+                                "participantId": "%s"
                             }
                         ]
                     }
                 }
-                """.formatted(
-                payerId,
-                participantId
+                """.formatted(payerId, participantId, secondParticipantId
         );
 
-        // when & then
-        mockMvc.perform(
-                        post("/api/groups/{groupId}/expenses", groupId)
-                                .header(
-                                        "Idempotency-Key",
-                                        UUID.randomUUID().toString()
-                                )
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(request)
-                )
+        mockMvc.perform(post("/api/groups/{groupId}/expenses", groupId)
+                        .header("Idempotency-Key", UUID.randomUUID().toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors.code")
                         .value("DOMAIN_ERROR"));
+    }
+
+    @Test
+    void shouldRejectExpenseWhenSplitParticipantIsNotInGroup() throws Exception {
+
+        BillGroupResponse group = createGroup();
+
+        UUID groupId = group.id();
+
+        UUID payerId = group.participants().get(0).id();
+
+        UUID outsiderId = UUID.randomUUID();
+
+        String request = """
+                {
+                    "paidBy": "%s",
+                    "amount": 300000.00,
+                    "category": "FOOD",
+                    "split": {
+                        "type": "EQUAL",
+                        "participants": [
+                            {
+                                "participantId": "%s"
+                            },
+                            {
+                                "participantId": "%s"
+                            }
+                        ]
+                    }
+                }
+                """.formatted(payerId, payerId, outsiderId
+        );
+
+        mockMvc.perform(post("/api/groups/{groupId}/expenses", groupId)
+                        .header("Idempotency-Key", UUID.randomUUID().toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.code")
+                        .value("DOMAIN_ERROR"));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void shouldHandleConcurrentExpenseCreationWithSameIdempotencyKey() throws Exception {
+
+        BillGroupResponse group = createGroup();
+
+        UUID groupId = group.id();
+
+        UUID payerId = group.participants().get(0).id();
+
+        UUID secondParticipantId = group.participants().get(1).id();
+
+        String idempotencyKey = "expense-race-" + UUID.randomUUID();
+
+        String request = """
+                {
+                    "paidBy": "%s",
+                    "amount": 300000.00,
+                    "category": "FOOD",
+                    "split": {
+                        "type": "EQUAL",
+                        "participants": [
+                            {
+                                "participantId": "%s"
+                            },
+                            {
+                                "participantId": "%s"
+                            }
+                        ]
+                    }
+                }
+                """.formatted(payerId, payerId, secondParticipantId
+        );
+
+        try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
+
+            CountDownLatch start = new CountDownLatch(1);
+
+            Callable<MvcResult> requestA = () -> {
+
+                start.await();
+
+                return mockMvc
+                        .perform(post("/api/groups/{groupId}/expenses", groupId)
+                                .header("Idempotency-Key", idempotencyKey)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(request))
+                        .andReturn();
+            };
+
+            Callable<MvcResult> requestB = () -> {
+
+                start.await();
+
+                return mockMvc
+                        .perform(post("/api/groups/{groupId}/expenses", groupId)
+                                .header("Idempotency-Key", idempotencyKey)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(request))
+                        .andReturn();
+            };
+
+            Future<MvcResult> futureA = executor.submit(requestA);
+
+            Future<MvcResult> futureB = executor.submit(requestB);
+
+            start.countDown();
+
+            MvcResult resultA = futureA.get();
+
+            MvcResult resultB = futureB.get();
+
+            int statusA = resultA.getResponse().getStatus();
+
+            int statusB = resultB.getResponse().getStatus();
+
+            assertThat(List.of(statusA, statusB))
+                    .containsExactlyInAnyOrder(201, 200);
+
+            JsonNode responseA = objectMapper.readTree(
+                    resultA.getResponse().getContentAsString()
+            );
+
+            JsonNode responseB = objectMapper.readTree(
+                    resultB.getResponse().getContentAsString()
+            );
+
+            UUID expenseIdA = UUID.fromString(responseA.get("data").get("id").asString());
+
+            UUID expenseIdB = UUID.fromString(responseB.get("data").get("id").asString());
+
+            assertThat(expenseIdA).isEqualTo(expenseIdB);
+
+            JsonNode splitsA = responseA.get("data").get("splits");
+
+            JsonNode splitsB = responseB.get("data").get("splits");
+
+            assertThat(splitsA).hasSize(2);
+
+            assertThat(splitsB).hasSize(2);
+
+            assertThat(expenseRepository.findById(expenseIdA))
+                    .isPresent();
+        }
     }
 
     private BillGroupResponse createGroup() {
@@ -349,11 +521,13 @@ class ExpenseIntegrationTest {
                 new CreateBillGroupCommand(
                         UUID.randomUUID().toString(),
                         "Trip Bandung",
-                        java.util.List.of(new String[]{"Taufik", "Budi"})
+                        List.of(
+                                "Taufik",
+                                "Budi"
+                        )
                 );
 
-        BillGroupResult result =
-                billGroupService.createGroup(command);
+        BillGroupResult result = billGroupService.createGroup(command);
 
         return result.response();
     }

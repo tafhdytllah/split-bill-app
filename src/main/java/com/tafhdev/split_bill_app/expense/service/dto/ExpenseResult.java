@@ -6,6 +6,6 @@ public record ExpenseResult(
 
         ExpenseResponse response,
 
-        boolean reply
+        boolean replay
 ) {
 }

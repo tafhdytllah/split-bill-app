@@ -31,16 +31,6 @@ public class IdempotencyService {
         this.objectMapper = objectMapper;
     }
 
-    public Optional<Idempotency> find(
-            IdempotencyScope scope,
-            String idempotencyKey
-    ) {
-        return idempotencyRepository.findByScopeAndKey(
-                scope,
-                idempotencyKey
-        );
-    }
-
     public Idempotency create(
             IdempotencyScope scope,
             String idempotencyKey,
@@ -54,7 +44,7 @@ public class IdempotencyService {
                 Instant.now(clock)
         );
 
-        return idempotencyRepository.save(idempotency);
+        return idempotencyRepository.saveAndFlush(idempotency);
     }
 
     public void complete(
@@ -80,6 +70,20 @@ public class IdempotencyService {
             );
         }
 
+    }
+
+    public Optional<Idempotency> find(
+            IdempotencyScope scope,
+            String idempotencyKey
+    ) {
+        return idempotencyRepository.findByScopeAndKey(
+                scope,
+                idempotencyKey
+        );
+    }
+
+    public boolean insertIfAbsent(Idempotency idempotency) {
+        return idempotencyRepository.insertIfAbsent(idempotency);
     }
 
     public <T> T getResponse(

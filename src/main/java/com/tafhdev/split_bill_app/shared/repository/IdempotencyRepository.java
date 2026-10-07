@@ -9,6 +9,10 @@ public interface IdempotencyRepository {
 
     Idempotency save(Idempotency idempotency);
 
+    Idempotency saveAndFlush(Idempotency idempotency);
+
+    boolean insertIfAbsent(Idempotency idempotency);
+
     Optional<Idempotency> findByScopeAndKey(
             IdempotencyScope scope,
             String idempotencyKey

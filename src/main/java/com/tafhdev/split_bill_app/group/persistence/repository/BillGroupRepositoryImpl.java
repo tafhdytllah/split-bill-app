@@ -39,4 +39,10 @@ public class BillGroupRepositoryImpl implements BillGroupRepository {
         return billGroupJpaRepository.findByIdWithParticipants(groupId)
                 .map(billGroupMapper::toDomain);
     }
+
+    @Override
+    public Optional<BillGroup> findByIdForUpdate(UUID groupId) {
+        return billGroupJpaRepository.findByIdForUpdate(groupId)
+                .map(billGroupMapper::toDomain);
+    }
 }

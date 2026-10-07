@@ -171,7 +171,7 @@ class ExpenseControllerTest {
         UUID paidBy = UUID.randomUUID();
         UUID participant2 = UUID.randomUUID();
 
-        String idempotencyKey = "expense-reply-001";
+        String idempotencyKey = "expense-replay-001";
 
         CreateExpenseRequest request = new CreateExpenseRequest(
                 paidBy,

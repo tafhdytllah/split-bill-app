@@ -138,7 +138,7 @@ class IdempotencyServiceTest {
                 createdAt
         );
 
-        when(idempotencyRepository.save(
+        when(idempotencyRepository.saveAndFlush(
                 any(Idempotency.class)
         )).thenReturn(idempotency);
 
@@ -177,7 +177,7 @@ class IdempotencyServiceTest {
                 .generate();
 
         verify(idempotencyRepository)
-                .save(any(Idempotency.class));
+                .saveAndFlush(any(Idempotency.class));
     }
 
     @Test
