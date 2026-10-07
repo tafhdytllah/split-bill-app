@@ -6,7 +6,7 @@ import com.tafhdev.split_bill_app.shared.domain.exception.Guard;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-public final class Money {
+public final class Money implements Comparable<Money> {
 
     private static final int SCALE = 2;
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
@@ -124,5 +124,12 @@ public final class Money {
     @Override
     public String toString() {
         return amount.toPlainString();
+    }
+
+    @Override
+    public int compareTo(Money other) {
+        Guard.requireNotNull(other, "other money");
+
+        return amount.compareTo(other.amount);
     }
 }

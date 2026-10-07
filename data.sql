@@ -8,6 +8,28 @@ TRUNCATE TABLE
     RESTART IDENTITY
     CASCADE;
 
+SELECT COUNT(*) FROM participants;
+SELECT COUNT(*) FROM expenses;
+SELECT COUNT(*) FROM expense_splits;
+
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT
+    e.id,
+    e.amount,
+    e.category,
+    e.created_at,
+    e.group_id,
+    e.paid_by,
+    e.split_type,
+    s.expense_id,
+    s.id,
+    s.amount,
+    s.participant_id
+FROM expenses e
+         LEFT JOIN expense_splits s
+                   ON e.id = s.expense_id
+WHERE e.group_id = 'GROUP_ID_LARGE';
+
 -- ============================================================
 -- SEED DATA
 -- ============================================================

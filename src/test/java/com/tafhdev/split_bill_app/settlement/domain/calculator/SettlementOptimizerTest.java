@@ -10,6 +10,10 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -43,7 +47,7 @@ class SettlementOptimizerTest {
         assertThat(result)
                 .hasSize(1);
 
-        assertThat(result.get(0))
+        assertThat(result.getFirst())
                 .satisfies(settlement -> {
                     assertThat(settlement.getFromParticipantId())
                             .isEqualTo(debtorId);

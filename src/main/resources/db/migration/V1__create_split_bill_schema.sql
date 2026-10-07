@@ -128,8 +128,11 @@ CREATE TABLE idempotencies
 CREATE INDEX idx_expenses_group_id
     ON expenses (group_id);
 
+CREATE INDEX idx_expense_splits_expense_id
+    ON expense_splits (expense_id);
+
 CREATE INDEX idx_payments_group_id
     ON payments (group_id);
 
-CREATE INDEX idx_audit_logs_group_id
-    ON audit_logs (group_id);
+CREATE INDEX idx_audit_logs_group_created_at
+    ON audit_logs (group_id, created_at DESC);

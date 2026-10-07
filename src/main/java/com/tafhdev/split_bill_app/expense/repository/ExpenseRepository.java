@@ -13,4 +13,6 @@ public interface ExpenseRepository {
     Optional<Expense> findById(UUID id);
 
     List<Expense> findByGroupId(UUID groupId);
+
+    List<Expense> findByGroupIdNative(UUID groupId);
 }

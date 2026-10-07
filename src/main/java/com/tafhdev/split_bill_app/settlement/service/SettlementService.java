@@ -48,14 +48,22 @@ public class SettlementService {
     @Transactional(readOnly = true)
     public SettlementResponse getSettlement(GetSettlementCommand command) {
 
+//        long start = System.nanoTime();
+
         BillGroup group = billGroupRepository.findById(command.groupId())
                 .orElseThrow(() ->
                         new ResourceNotFoundException("group not found")
                 );
 
+//        long afterGroup = System.nanoTime();
+
         List<Expense> expenses = expenseRepository.findByGroupId(command.groupId());
 
+//        long afterExpense = System.nanoTime();
+
         List<Payment> payments = paymentRepository.findByGroupId(command.groupId());
+
+//        long afterPayment = System.nanoTime();
 
         List<Balance> balances = balanceCalculator.calculate(
                 group.getParticipants(),
@@ -63,12 +71,36 @@ public class SettlementService {
                 payments
         );
 
+//        long afterBalance = System.nanoTime();
+
         List<Settlement> settlements = settlementOptimizer.optimize(balances);
 
-        return settlementApiMapper.toResponse(
+//        long afterOptimizer = System.nanoTime();
+
+        SettlementResponse response = settlementApiMapper.toResponse(
                 group,
                 balances,
                 settlements
         );
+
+//        long afterMapper = System.nanoTime();
+
+//        System.out.println(
+//                "SETTLEMENT TIMING | "
+//                        + "group=" + nanosToMillis(afterGroup - start)
+//                        + "ms, expense=" + nanosToMillis(afterExpense - afterGroup)
+//                        + "ms, payment=" + nanosToMillis(afterPayment - afterExpense)
+//                        + "ms, balance=" + nanosToMillis(afterBalance - afterPayment)
+//                        + "ms, optimizer=" + nanosToMillis(afterOptimizer - afterBalance)
+//                        + "ms, mapper=" + nanosToMillis(afterMapper - afterOptimizer)
+//                        + "ms, total=" + nanosToMillis(afterMapper - start)
+//                        + "ms"
+//        );
+
+        return response;
+    }
+
+    private long nanosToMillis(long nanos) {
+        return nanos / 1_000_000;
     }
 }

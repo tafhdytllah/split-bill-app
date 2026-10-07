@@ -5,6 +5,7 @@ import com.tafhdev.split_bill_app.expense.domain.ExpenseCategory;
 import com.tafhdev.split_bill_app.expense.domain.ExpenseSplit;
 import com.tafhdev.split_bill_app.expense.domain.ExpenseSplitType;
 import com.tafhdev.split_bill_app.expense.persistence.entity.ExpenseEntity;
+import com.tafhdev.split_bill_app.expense.persistence.projection.ExpenseProjection;
 import com.tafhdev.split_bill_app.group.persistence.entity.BillGroupEntity;
 import com.tafhdev.split_bill_app.group.persistence.entity.ParticipantEntity;
 import com.tafhdev.split_bill_app.shared.domain.Money;
@@ -54,6 +55,22 @@ public class ExpenseMapper {
                 ExpenseSplitType.valueOf(entity.getSplitType()),
                 splits,
                 entity.getCreatedAt()
+        );
+    }
+
+    public Expense toDomain(
+            ExpenseProjection row,
+            List<ExpenseSplit> splits
+    ) {
+        return Expense.reconstitute(
+                row.expenseId(),
+                row.groupId(),
+                row.paidBy(),
+                Money.of(row.amount()),
+                ExpenseCategory.valueOf(row.category()),
+                ExpenseSplitType.valueOf(row.splitType()),
+                splits,
+                row.createdAt()
         );
     }
 }

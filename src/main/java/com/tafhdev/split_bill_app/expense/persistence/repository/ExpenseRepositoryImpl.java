@@ -1,23 +1,24 @@
 package com.tafhdev.split_bill_app.expense.persistence.repository;
 
 import com.tafhdev.split_bill_app.expense.domain.Expense;
+import com.tafhdev.split_bill_app.expense.domain.ExpenseCategory;
 import com.tafhdev.split_bill_app.expense.domain.ExpenseSplit;
+import com.tafhdev.split_bill_app.expense.domain.ExpenseSplitType;
 import com.tafhdev.split_bill_app.expense.persistence.entity.ExpenseEntity;
 import com.tafhdev.split_bill_app.expense.persistence.entity.ExpenseSplitEntity;
 import com.tafhdev.split_bill_app.expense.persistence.mapper.ExpenseMapper;
 import com.tafhdev.split_bill_app.expense.persistence.mapper.ExpenseSplitMapper;
+import com.tafhdev.split_bill_app.expense.persistence.projection.ExpenseProjection;
 import com.tafhdev.split_bill_app.expense.repository.ExpenseRepository;
 import com.tafhdev.split_bill_app.group.persistence.entity.BillGroupEntity;
 import com.tafhdev.split_bill_app.group.persistence.entity.ParticipantEntity;
 import com.tafhdev.split_bill_app.group.persistence.repository.BillGroupJpaRepository;
 import com.tafhdev.split_bill_app.group.persistence.repository.ParticipantJpaRepository;
 import com.tafhdev.split_bill_app.shared.application.exception.ResourceNotFoundException;
+import com.tafhdev.split_bill_app.shared.domain.Money;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -123,9 +124,53 @@ public class ExpenseRepositoryImpl implements ExpenseRepository {
 
     @Override
     public List<Expense> findByGroupId(UUID groupId) {
-        return expenseJpaRepository.findByGroup_id(groupId)
-                .stream()
+        return expenseJpaRepository.findByGroup_id(groupId).stream()
                 .map(expenseMapper::toDomain)
                 .toList();
+    }
+
+    @Override
+    public List<Expense> findByGroupIdNative(UUID groupId) {
+
+        List<ExpenseProjection> rows = expenseJpaRepository.findProjectionByGroupId(groupId);
+
+        if (rows.isEmpty()) {
+            return List.of();
+        }
+
+        List<Expense> expenses = new ArrayList<>();
+        UUID currentExpenseId = null;
+        ExpenseProjection firstRow = null;
+        List<ExpenseSplit> splits = new ArrayList<>();
+
+        for (ExpenseProjection row : rows) {
+
+            if (!row.expenseId().equals(currentExpenseId)) {
+
+                if (firstRow != null) {
+                    expenses.add(expenseMapper.toDomain(firstRow, splits));
+                }
+
+                currentExpenseId = row.expenseId();
+                firstRow = row;
+                splits = new ArrayList<>();
+            }
+
+            if (row.splitId() != null) {
+                splits.add(
+                        ExpenseSplit.reconstitute(
+                                row.splitId(),
+                                row.participantId(),
+                                Money.of(row.splitAmount())
+                        )
+                );
+            }
+        }
+
+        if (firstRow != null) {
+            expenses.add(expenseMapper.toDomain(firstRow, splits));
+        }
+
+        return expenses;
     }
 }

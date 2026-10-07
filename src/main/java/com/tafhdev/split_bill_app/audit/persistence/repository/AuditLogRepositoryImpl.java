@@ -45,7 +45,7 @@ public class AuditLogRepositoryImpl implements AuditLogRepository {
 
     @Override
     public List<AuditLog> findByGroupId(UUID groupId) {
-        return auditLogJpaRepository.findByGroup_Id(groupId).stream()
+        return auditLogJpaRepository.findByGroup_IdOrderByCreatedAtDesc(groupId).stream()
                 .map(auditLogMapper::toDomain)
                 .toList();
     }
