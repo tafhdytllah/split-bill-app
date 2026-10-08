@@ -1,17 +1,33 @@
-version: '3.9'
-
 services:
-  db:
-    image: postgres:16
-    container_name: split-bill-db
+  postgres:
+    image: postgres:17
+    container_name: split-bill-postgres
     environment:
+      POSTGRES_DB: split_bill_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 123456
-      POSTGRES_DB: split_bill_db
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d split_bill_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    image: split-bill-app
+    container_name: split-bill-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "4110:4110"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/split_bill_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 123456
 
 volumes:
   postgres_data:

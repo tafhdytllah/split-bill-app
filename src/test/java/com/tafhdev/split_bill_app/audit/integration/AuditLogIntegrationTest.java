@@ -71,8 +71,8 @@ class AuditLogIntegrationTest {
 
         assertThat(auditLogs).hasSize(2);
 
-        JsonNode expenseAudit = auditLogs.get(0);
-        JsonNode paymentAudit = auditLogs.get(1);
+        JsonNode paymentAudit = auditLogs.get(0);
+        JsonNode expenseAudit = auditLogs.get(1);
 
         assertThat(expenseAudit.get("action").asString())
                 .isEqualTo("CREATED");
