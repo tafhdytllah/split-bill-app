@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,7 +39,7 @@ class SettlementIntegrationTest {
         createExpense(
                 group.groupId(),
                 group.taufikId(),
-                100000,
+                new BigDecimal("100000"),
                 group.taufikId(),
                 group.andiId()
         );
@@ -84,11 +85,11 @@ class SettlementIntegrationTest {
                 group.andiId()
         );
 
-        assertThat(taufikBalance.get("amount").decimalValue())
-                .isEqualByComparingTo("50000.00");
+        assertThat(taufikBalance.get("amount").asString())
+                .isEqualTo("50000.00");
 
-        assertThat(andiBalance.get("amount").decimalValue())
-                .isEqualByComparingTo("-50000.00");
+        assertThat(andiBalance.get("amount").asString())
+                .isEqualTo("-50000.00");
 
         JsonNode settlement = settlements.get(0);
 
@@ -106,9 +107,7 @@ class SettlementIntegrationTest {
         )
                 .isEqualTo(group.taufikId());
 
-        assertThat(
-                settlement.get("amount").asString()
-        )
+        assertThat(settlement.get("amount").asString())
                 .isEqualTo("50000.00");
     }
 
@@ -218,7 +217,7 @@ class SettlementIntegrationTest {
     private void createExpense(
             UUID groupId,
             UUID paidBy,
-            int amount,
+            BigDecimal amount,
             UUID firstParticipantId,
             UUID secondParticipantId
     ) throws Exception {
@@ -236,7 +235,7 @@ class SettlementIntegrationTest {
                                 .content("""
                                         {
                                           "paidBy": "%s",
-                                          "amount": %d,
+                                          "amount": %s,
                                           "category": "FOOD",
                                           "split": {
                                             "type": "EQUAL",
