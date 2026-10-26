@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.cache.CacheManager;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -47,6 +48,9 @@ class ExpenseControllerTest {
 
     @MockitoBean
     private ExpenseApiMapper expenseApiMapper;
+
+    @MockitoBean
+    private CacheManager cacheManager;
 
     @Test
     void createExpense_shouldReturn201Created_whenExpenseIsCreated() throws Exception {

@@ -23,6 +23,8 @@ import com.tafhdev.split_bill_app.shared.application.service.IdempotencyService;
 import com.tafhdev.split_bill_app.shared.domain.Idempotency;
 import com.tafhdev.split_bill_app.shared.domain.IdempotencyScope;
 import com.tafhdev.split_bill_app.shared.infrastructure.generator.IdGenerator;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,6 +71,7 @@ public class ExpenseService {
         this.expenseApiMapper = expenseApiMapper;
     }
 
+    @CacheEvict(value = "SETTLEMENTS", key = "#command.groupId()")
     @Transactional
     public ExpenseResult createExpense(CreateExpenseCommand command) {
 
