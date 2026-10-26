@@ -24,6 +24,9 @@ public class BillGroupEntity {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
     @OneToMany(
             mappedBy = "group",
             fetch = FetchType.LAZY,
@@ -56,10 +59,11 @@ public class BillGroupEntity {
     protected BillGroupEntity() {
     }
 
-    public BillGroupEntity(UUID id, String name, Instant createdAt) {
+    public BillGroupEntity(UUID id, String name, Instant createdAt, Instant deletedAt) {
         this.id = id;
         this.name = name;
         this.createdAt = createdAt;
+        this.deletedAt = deletedAt;
     }
 
     public UUID getId() {
@@ -72,6 +76,10 @@ public class BillGroupEntity {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Instant getDeletedAt() {
+        return deletedAt;
     }
 
     public List<ParticipantEntity> getParticipants() {

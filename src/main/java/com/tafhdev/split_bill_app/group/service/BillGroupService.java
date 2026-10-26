@@ -24,7 +24,6 @@ import java.security.MessageDigest;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -138,5 +137,30 @@ public class BillGroupService {
                 response,
                 false
         );
+    }
+
+    @Transactional(readOnly = true)
+    public BillGroupResult getGroup(UUID id) {
+
+        BillGroup group = billGroupRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("group not found"));
+
+        BillGroupResponse response = billGroupApiMapper.toResponse(group);
+
+        return new BillGroupResult(
+                response,
+                false
+        );
+    }
+
+    @Transactional
+    public void deleteGroup(UUID id) {
+
+        BillGroup group = billGroupRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("group not found"));
+
+        group.deactivate(Instant.now(clock));
+
+        billGroupRepository.save(group);
     }
 }

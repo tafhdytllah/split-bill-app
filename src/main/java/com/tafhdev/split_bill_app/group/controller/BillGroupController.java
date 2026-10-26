@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @Validated
 @RestController
 @RequestMapping("/api/groups")
@@ -51,5 +53,18 @@ public class BillGroupController {
         return result.replay()
                 ? ResponseFactory.ok(result.response())
                 : ResponseFactory.created(result.response());
+    }
+
+    @GetMapping("/{groupId}")
+    public ResponseEntity<ApiResponse<BillGroupResponse>> getGroup(@PathVariable UUID groupId) {
+        return ResponseFactory.ok(billGroupService.getGroup(groupId).response());
+    }
+
+    @DeleteMapping("/{groupId}")
+    public ResponseEntity<ApiResponse<Void>> deleteGroup(@PathVariable UUID groupId) {
+
+        billGroupService.deleteGroup(groupId);
+
+        return ResponseFactory.ok(null, "group has been deleted");
     }
 }

@@ -26,8 +26,7 @@ public class BillGroupRepositoryImpl implements BillGroupRepository {
     @Override
     public BillGroup save(BillGroup group) {
 
-        BillGroupEntity groupEntity =
-                billGroupMapper.toEntity(group);
+        BillGroupEntity groupEntity = billGroupMapper.toEntity(group);
 
         billGroupJpaRepository.save(groupEntity);
 

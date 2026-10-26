@@ -16,7 +16,7 @@ public interface BillGroupJpaRepository extends JpaRepository<BillGroupEntity, U
         SELECT DISTINCT g
         FROM BillGroupEntity g
         LEFT JOIN FETCH g.participants
-        WHERE g.id = :groupId
+        WHERE g.id = :groupId AND g.deletedAt IS NULL
     """)
     Optional<BillGroupEntity> findByIdWithParticipants(
             @Param("groupId") UUID groupId
@@ -27,7 +27,7 @@ public interface BillGroupJpaRepository extends JpaRepository<BillGroupEntity, U
         SELECT DISTINCT g
         FROM BillGroupEntity g
         LEFT JOIN FETCH g.participants
-        WHERE g.id = :groupId
+        WHERE g.id = :groupId AND g.deletedAt IS NULL
     """)
     Optional<BillGroupEntity> findByIdForUpdate(
             @Param("groupId") UUID groupId

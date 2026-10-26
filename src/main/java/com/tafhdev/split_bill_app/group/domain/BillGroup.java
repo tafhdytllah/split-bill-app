@@ -4,6 +4,7 @@ import com.tafhdev.split_bill_app.shared.domain.exception.DomainException;
 import com.tafhdev.split_bill_app.shared.domain.exception.Guard;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
 
 public class BillGroup {
@@ -12,17 +13,20 @@ public class BillGroup {
     private final String name;
     private final List<Participant> participants;
     private final Instant createdAt;
+    private Instant deletedAt;
 
     private BillGroup(
             UUID id,
             String name,
             List<Participant> participants,
-            Instant createdAt
+            Instant createdAt,
+            Instant deletedAt
     ) {
         this.id = id;
         this.name = name;
         this.participants = new ArrayList<>(participants);
         this.createdAt = createdAt;
+        this.deletedAt = deletedAt;
     }
 
     public static BillGroup createNew(
@@ -43,7 +47,8 @@ public class BillGroup {
                 id,
                 name,
                 participants,
-                createdAt
+                createdAt,
+                null
         );
     }
 
@@ -51,7 +56,8 @@ public class BillGroup {
             UUID id,
             String name,
             List<Participant> participants,
-            Instant createdAt
+            Instant createdAt,
+            Instant deletedAt
     ) {
         validateInvariants(
                 id,
@@ -64,7 +70,8 @@ public class BillGroup {
                 id,
                 name,
                 participants,
-                createdAt
+                createdAt,
+                deletedAt
         );
     }
 
@@ -105,6 +112,16 @@ public class BillGroup {
                 .orElseThrow(() -> new DomainException("participant does not belong to group"));
     }
 
+    public void deactivate(Instant now) {
+        if (!isDeleted()) {
+            this.deletedAt = now;
+        }
+    }
+
+    public boolean isDeleted() {
+        return this.deletedAt != null;
+    }
+
     public UUID getId() {
         return id;
     }
@@ -119,5 +136,9 @@ public class BillGroup {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Instant getDeletedAt() {
+        return deletedAt;
     }
 }

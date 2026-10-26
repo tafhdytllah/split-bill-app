@@ -23,7 +23,8 @@ public class BillGroupMapper {
         BillGroupEntity entity = new BillGroupEntity(
                 domain.getId(),
                 domain.getName(),
-                domain.getCreatedAt()
+                domain.getCreatedAt(),
+                domain.getDeletedAt()
         );
 
         for (Participant participant : domain.getParticipants()) {
@@ -50,7 +51,8 @@ public class BillGroupMapper {
                 entity.getId(),
                 entity.getName(),
                 participants,
-                entity.getCreatedAt()
+                entity.getCreatedAt(),
+                entity.getDeletedAt()
         );
     }
 }
